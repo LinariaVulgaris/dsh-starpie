@@ -159,9 +159,10 @@ window.__ModuleLoader__.load({
       'restart-dsh.pending': '正在重启 DSH…',
       'restart-dsh.success': 'DSH 正在重启',
       'restart-dsh.confirm.title': '重启 DSH',
-      'restart-dsh.confirm.body': '将退出当前 DeepSeek Harness 进程,并以原启动方式重新拉起。所有正在运行的任务与进行中的 AI 输出会被立即中断。',
+      'restart-dsh.confirm.body': '将退出当前 DeepSeek Harness 进程,并以原启动方式重新拉起。',
+      'restart-dsh.confirm.interrupt': '所有正在运行的任务与进行中的 AI 输出会被立即中断。',
       'restart-dsh.confirm.running': '检测到当前会话的 AI 正在思考或输出,重启会丢失这一轮的内容。',
-      'restart-dsh.confirm.hint': '桌面版:窗口将关闭并在数秒后自动重新打开;Web 版:重启后请用新地址重新打开页面。',
+      'restart-dsh.confirm.hint': '桌面版:窗口将关闭并在数秒后自动重新打开;\nWeb 版:重启后请用新地址重新打开页面。',
       'restart-dsh.confirm.cancel': '取消',
       'restart-dsh.confirm.ok': '确认重启',
       'open-dir.success': '已请求打开工作目录', 'copy-cwd.success': '工作目录路径已复制',
@@ -217,9 +218,10 @@ window.__ModuleLoader__.load({
       'restart-dsh.pending': 'Restarting DSH…',
       'restart-dsh.success': 'DSH is restarting',
       'restart-dsh.confirm.title': 'Restart DSH',
-      'restart-dsh.confirm.body': 'This exits the current DeepSeek Harness process and relaunches it the way it was started. Every running task and in-flight AI output is interrupted immediately.',
+      'restart-dsh.confirm.body': 'This exits the current DeepSeek Harness process and relaunches it the way it was started.',
+      'restart-dsh.confirm.interrupt': 'Every running task and in-flight AI output is interrupted immediately.',
       'restart-dsh.confirm.running': 'The AI in this session is thinking or streaming right now; restarting loses this turn’s output.',
-      'restart-dsh.confirm.hint': 'Desktop: the window closes and reopens automatically after a few seconds. Web: reopen the page at the new address afterwards.',
+      'restart-dsh.confirm.hint': 'Desktop: the window closes and reopens automatically after a few seconds;\nWeb: reopen the page at the new address afterwards.',
       'restart-dsh.confirm.cancel': 'Cancel',
       'restart-dsh.confirm.ok': 'Restart now',
       'open-dir.success': 'Requested to open the workspace', 'copy-cwd.success': 'Workspace path copied',
@@ -302,9 +304,9 @@ window.__ModuleLoader__.load({
       h('path', { d: ICON_PATHS[name] ?? ICON_PATHS.close, stroke: circular ? '#fff' : undefined, strokeWidth: circular ? 2 : undefined }))
     }
 
-    const STYLE_TAG = 'dsh-radial-menu/styles/v6'
+    const STYLE_TAG = 'dsh-radial-menu/styles/v7'
     /** Earlier sheets this bundle supersedes; removed before the new one loads. */
-    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5']
+    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6']
     const CSS = `
 [data-drm-layer], [data-drm-settings] { --drm-accent: #67dce7; --drm-accent-rgb: 103 220 231; --drm-accent-strong: #67dce7; --drm-accent-strong-rgb: 103 220 231; --drm-accent-solid: #67dce7; --drm-accent-solid-fg: #06333a; --drm-accent-solid-hover: #8fe9f1; --drm-accent-fg: #06333a; --drm-tint-pie: 8%; --drm-tint-hole: 14%; --drm-tint-active-1: 6%; --drm-tint-active-2: 15%; --drm-tint-active-3: 32%; --drm-elev: 0 16px 44px rgb(0 0 0 / .42); --drm-text-shadow: 0 1px 3px rgb(0 0 0 / .35); --drm-dur: 380ms; }
 [data-drm-layer] { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: var(--dsw-font-family, system-ui, sans-serif); }
@@ -456,8 +458,8 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
 [data-drm-confirm-card] { width: min(420px, calc(100vw - 40px)); box-sizing: border-box; padding: 18px 20px 16px; border: 1px solid var(--dsw-alias-border-l2, #3a4250); border-radius: 14px; background: var(--dsw-alias-bg-layer-1, #1d222a); box-shadow: 0 24px 60px rgb(0 0 0 / .5); color: var(--dsw-alias-label-primary, #e8edf4); }
 [data-drm-confirm-card] h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
 [data-drm-confirm-card] p { margin: 0 0 8px; font-size: 13px; line-height: 1.55; color: var(--dsw-alias-label-secondary, #a8b4c2); }
-[data-drm-confirm-warn] { color: var(--dsw-alias-state-error-primary, #f16b73); font-weight: 500; }
-[data-drm-confirm-hint] { font-size: 12px; color: var(--dsw-alias-label-tertiary, #8997a7); }
+[data-drm-confirm-warn] { color: var(--dsw-alias-state-error-primary, #f16b73); font-weight: 600; }
+[data-drm-confirm-hint] { font-size: 12px; color: var(--dsw-alias-label-tertiary, #8997a7); white-space: pre-line; margin-top: 10px; }
 [data-drm-confirm-row] { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 [data-drm-confirm-row] button { appearance: none; padding: 7px 16px; border-radius: 9px; border: 1px solid var(--dsw-alias-border-l2, #3a4250); background: transparent; color: var(--dsw-alias-label-primary, #e8edf4); font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s, filter .15s; }
 [data-drm-confirm-row] button:hover { border-color: var(--drm-accent-strong); color: var(--drm-accent-strong); }
@@ -932,6 +934,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       h('div', { 'data-drm-confirm-card': '' },
         h('h3', null, t('restart-dsh.confirm.title')),
         h('p', null, t('restart-dsh.confirm.body')),
+        h('p', { 'data-drm-confirm-warn': '' }, t('restart-dsh.confirm.interrupt')),
         running ? h('p', { 'data-drm-confirm-warn': '' }, t('restart-dsh.confirm.running')) : null,
         h('p', { 'data-drm-confirm-hint': '' }, t('restart-dsh.confirm.hint')),
         h('div', { 'data-drm-confirm-row': '' },
