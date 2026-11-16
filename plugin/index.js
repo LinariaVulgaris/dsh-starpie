@@ -95,47 +95,87 @@ function launchedThroughSsh(env = process.env) {
   return Boolean((env.SSH_CONNECTION && env.SSH_CONNECTION !== '') || (env.SSH_TTY && env.SSH_TTY !== ''))
 }
 
-/** Watchdog source: waits for this process to exit, then relaunches the
- *  original command line. It inherits the spawning terminal's stdio, so a
- *  `dsh web` style launch prints its new listening address like any normal
- *  foreground run. Exits on its own when the wait times out. */
+/** Watchdog source, two modes:
+ *  - `web`: wait for this process to exit, then relaunch the original node
+ *    command line inheriting the spawning terminal's stdio, so a `dsh web`
+ *    style launch prints its new listening address like any foreground run;
+ *  - `desktop`: the Host runs as an Electron-as-Node child of the GUI shell,
+ *    which holds the single-instance lock and shows a crash dialog (never a
+ *    relaunch) when the Host exits, and exposes no restart IPC channel. So
+ *    after the Host is gone the watchdog terminates the shell pid, waits for
+ *    the lock to free, and launches the executable as a plain GUI run — the
+ *    Electron node-mode marker is stripped from the child environment or the
+ *    "new instance" would boot headless.
+ *  Either mode exits on its own when its waits time out. */
 const RESTART_WATCHDOG_SOURCE = `
-const target = Number(process.argv[1] || 0)
-const command = process.argv[2] || ''
-const args = process.argv.slice(3)
+const mode = process.argv[1] === 'desktop' ? 'desktop' : 'web'
+const target = Number(process.argv[2] || 0)
+const shell = Number(process.argv[3] || 0)
+const command = process.argv[4] || ''
+const args = process.argv.slice(5)
 if (!target || !command) process.exit(1)
-const deadline = Date.now() + 20000
-const gone = () => {
-  try { process.kill(target, 0); return false } catch { return true }
+const gone = (pid) => {
+  try { process.kill(pid, 0); return false } catch { return true }
 }
-const wait = setInterval(() => {
-  if (gone() || Date.now() > deadline) {
-    clearInterval(wait)
-    if (!gone()) process.exit(1)
-    const { spawn } = require('node:child_process')
-    let child
-    try {
-      child = spawn(command, args, { detached: true, stdio: 'inherit', windowsHide: false })
-    } catch {
-      child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
+const poll = (pid, timeoutMs, step) => {
+  const deadline = Date.now() + timeoutMs
+  const timer = setInterval(() => {
+    if (gone(pid) || Date.now() > deadline) {
+      clearInterval(timer)
+      step()
     }
-    child.unref()
-    setTimeout(() => process.exit(0), 1000).unref()
+  }, 120)
+}
+const launch = () => {
+  const { spawn } = require('node:child_process')
+  const options = mode === 'desktop'
+    ? (() => {
+        const env = Object.assign({}, process.env)
+        delete env.ELECTRON_RUN_AS_NODE
+        delete env.DSH_DESKTOP_NODE_EXECUTABLE
+        return { detached: true, stdio: 'ignore', windowsHide: false, env }
+      })()
+    : { detached: true, stdio: 'inherit', windowsHide: false }
+  let child
+  try {
+    child = spawn(command, args, options)
+  } catch {
+    try {
+      child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
+    } catch {
+      process.exit(1)
+    }
   }
-}, 120)
+  child.unref()
+  setTimeout(() => process.exit(0), 1000).unref()
+}
+poll(target, 20000, () => {
+  if (!gone(target)) process.exit(1)
+  if (mode === 'desktop' && shell) {
+    try { process.kill(shell, 'SIGKILL') } catch {}
+    poll(shell, 10000, launch)
+  } else {
+    launch()
+  }
+})
 `
 
 /** Spawn the detached watchdog for one restart request; returns false when
- *  the platform offers no usable way to relaunch (Electron Desktop owns its
- *  own relaunch path, and a bare `-e` watchdog would not survive there). */
+ *  the platform offers no usable executable to relaunch with. */
 function spawnRestartWatchdog() {
-  if (process.versions.electron !== undefined) return false
   const command = process.execPath
   if (typeof command !== 'string' || command === '') return false
-  const args = ['-e', RESTART_WATCHDOG_SOURCE, String(process.pid), command, ...process.argv.slice(1)]
+  const desktop = process.versions.electron !== undefined
+  const args = desktop
+    ? ['-e', RESTART_WATCHDOG_SOURCE, 'desktop', String(process.pid), String(process.ppid), command]
+    : ['-e', RESTART_WATCHDOG_SOURCE, 'web', String(process.pid), '0', command, ...process.argv.slice(1)]
   let child
   try {
-    child = spawn(command, args, { detached: true, stdio: 'inherit', windowsHide: false })
+    child = spawn(command, args, {
+      detached: true,
+      stdio: desktop ? 'ignore' : 'inherit',
+      windowsHide: false,
+    })
   } catch {
     child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
   }
