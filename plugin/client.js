@@ -492,6 +492,10 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       tag.textContent = CSS
       document.head.appendChild(tag)
     }
+    /* Assert the sheet as soon as this bundle evaluates: a hot module swap
+       replaces the code without necessarily remounting the overlay, and the
+       previous bundle's sheet would otherwise keep styling new markup. */
+    ensureStyles()
 
     /* ---------- pie geometry (first slice points up) ---------- */
     const INNER_RATIO = 0.18
@@ -955,6 +959,12 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       configRef.current = config
 
       useEffect(() => props.deps.subscribeConfig(setConfig), [props.deps])
+      /* A hot module swap can leave the previous bundle's stylesheet in the
+         head while this newer code renders (the mount effect below does not
+         re-run for a preserved component), which shows new markup with old
+         rules. Re-assert the sheet on every render: ensureStyles() is one
+         querySelector when the current tag already exists. */
+      useEffect(() => { ensureStyles() })
       useEffect(() => {
         if (feedback === null || feedback.kind === 'pending') return
         const timer = window.setTimeout(() => setFeedback(null), feedback.kind === 'error' ? 8000 : 4500)
