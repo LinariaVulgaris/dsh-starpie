@@ -1,8 +1,10 @@
 /**
- * Host half of the radial right-click menu: two loopback-only HTTP routes.
+ * Host half of the radial right-click menu: three loopback-only HTTP routes.
  * `POST /dsh-radial-menu/open-dir` opens a session workspace in the system
  * file manager after validating the path; `GET/PUT /dsh-radial-menu/config`
- * reads and persists the user's ring configuration beside the profile.
+ * reads and persists the user's ring configuration beside the profile;
+ * `POST /dsh-radial-menu/restart` relaunches the harness through a detached
+ * watchdog once this process has exited.
  */
 import { spawn } from 'node:child_process'
 import { stat as fsStat, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
@@ -13,6 +15,7 @@ export const inject = ['webServer']
 
 const OPEN_DIR_ROUTE = '/dsh-radial-menu/open-dir'
 const CONFIG_ROUTE = '/dsh-radial-menu/config'
+const RESTART_ROUTE = '/dsh-radial-menu/restart'
 const MAX_BODY_BYTES = 64 * 1024
 const MAX_CONFIG_BYTES = 32 * 1024
 /** Only plain #rrggbb accents are accepted; anything else falls back. */
@@ -23,6 +26,7 @@ const DEFAULT_STYLE = 'liquid'
 const ALL_ITEMS = [
   'plugin-market', 'new-session',
   'open-dir', 'copy-cwd',
+  'restart-dsh',
 ]
 const DEFAULT_CONFIG = {
   version: 1,
@@ -89,6 +93,54 @@ async function checkOpenableDirectory(filePath, platform, statFn = fsStat) {
 
 function launchedThroughSsh(env = process.env) {
   return Boolean((env.SSH_CONNECTION && env.SSH_CONNECTION !== '') || (env.SSH_TTY && env.SSH_TTY !== ''))
+}
+
+/** Watchdog source: waits for this process to exit, then relaunches the
+ *  original command line. It inherits the spawning terminal's stdio, so a
+ *  `dsh web` style launch prints its new listening address like any normal
+ *  foreground run. Exits on its own when the wait times out. */
+const RESTART_WATCHDOG_SOURCE = `
+const target = Number(process.argv[1] || 0)
+const command = process.argv[2] || ''
+const args = process.argv.slice(3)
+if (!target || !command) process.exit(1)
+const deadline = Date.now() + 20000
+const gone = () => {
+  try { process.kill(target, 0); return false } catch { return true }
+}
+const wait = setInterval(() => {
+  if (gone() || Date.now() > deadline) {
+    clearInterval(wait)
+    if (!gone()) process.exit(1)
+    const { spawn } = require('node:child_process')
+    let child
+    try {
+      child = spawn(command, args, { detached: true, stdio: 'inherit', windowsHide: false })
+    } catch {
+      child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
+    }
+    child.unref()
+    setTimeout(() => process.exit(0), 1000).unref()
+  }
+}, 120)
+`
+
+/** Spawn the detached watchdog for one restart request; returns false when
+ *  the platform offers no usable way to relaunch (Electron Desktop owns its
+ *  own relaunch path, and a bare `-e` watchdog would not survive there). */
+function spawnRestartWatchdog() {
+  if (process.versions.electron !== undefined) return false
+  const command = process.execPath
+  if (typeof command !== 'string' || command === '') return false
+  const args = ['-e', RESTART_WATCHDOG_SOURCE, String(process.pid), command, ...process.argv.slice(1)]
+  let child
+  try {
+    child = spawn(command, args, { detached: true, stdio: 'inherit', windowsHide: false })
+  } catch {
+    child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
+  }
+  child.unref()
+  return true
 }
 
 /** Validate one incoming ring configuration, filling defaults for absent fields. */
@@ -269,4 +321,58 @@ export function apply(ctx) {
       sendJson(res, 200, config)
     },
   }), 'dsh-radial-menu: GET/PUT config')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: RESTART_ROUTE,
+    handler: async (req, res) => {
+      const connection = ctx.get?.('connection')
+      const rejection = connection?.requestRejection?.(req)
+      if (rejection !== undefined) {
+        res.statusCode = rejection
+        res.end()
+        return
+      }
+      if (req.method !== 'POST') {
+        res.statusCode = 405
+        res.setHeader('allow', 'POST')
+        res.end()
+        return
+      }
+      const essence = String(req.headers['content-type']).split(';', 1)[0]?.trim().toLowerCase()
+      if (essence !== 'application/json') {
+        sendJson(res, 415, { code: 'unsupported-media-type' })
+        return
+      }
+      if (launchedThroughSsh()) {
+        sendJson(res, 403, { code: 'ssh' })
+        return
+      }
+      let text
+      try {
+        text = await readBoundedBody(req, MAX_BODY_BYTES)
+      } catch {
+        sendJson(res, 400, { code: 'bad-request' })
+        return
+      }
+      if (text === null) {
+        sendJson(res, 413, { code: 'payload-too-large' })
+        return
+      }
+      try {
+        JSON.parse(text)
+      } catch {
+        sendJson(res, 400, { code: 'bad-request' })
+        return
+      }
+      if (!spawnRestartWatchdog()) {
+        sendJson(res, 503, { code: 'restart-unavailable' })
+        return
+      }
+      sendJson(res, 200, { ok: true })
+      /* Let the response flush, then leave; the watchdog relaunches us once
+         this pid is gone. */
+      setTimeout(() => process.exit(0), 400)
+    },
+  }), 'dsh-radial-menu: POST restart')
 }

@@ -19,15 +19,18 @@ window.__ModuleLoader__.load({
     /** Host routes served by this bundle's Host half. */
     const OPEN_DIR_ROUTE = '/dsh-radial-menu/open-dir'
     const CONFIG_ROUTE = '/dsh-radial-menu/config'
+    const RESTART_ROUTE = '/dsh-radial-menu/restart'
 
     /** Every action the pie can show, in the order the panel lists them. */
     const ALL_ITEMS = [
       'plugin-market', 'new-session',
       'open-dir', 'copy-cwd',
+      'restart-dsh',
     ]
     const DEFAULT_ITEMS = [
       'plugin-market', 'new-session',
       'open-dir', 'copy-cwd',
+      'restart-dsh',
     ]
     /** Only plain #rrggbb accents are accepted; anything else falls back. */
     const ACCENT_RE = /^#[0-9a-fA-F]{6}$/
@@ -151,6 +154,10 @@ window.__ModuleLoader__.load({
       'new-session.description': '在当前工作区开始一个新会话',
       'open-dir.description': '在系统文件管理器中打开此会话的工作目录',
       'copy-cwd.description': '复制此会话工作目录的完整路径',
+      'restart-dsh': '重启 DSH',
+      'restart-dsh.description': '退出当前 DeepSeek Harness 进程,并以原启动命令重新拉起',
+      'restart-dsh.pending': '正在重启 DSH…',
+      'restart-dsh.success': 'DSH 正在重启',
       'open-dir.success': '已请求打开工作目录', 'copy-cwd.success': '工作目录路径已复制',
       'export.success': '已开始下载会话日志', 'plugin-market.success': '已打开插件市场',
       'new-session.success': '已开始新会话',
@@ -199,6 +206,10 @@ window.__ModuleLoader__.load({
       'new-session.description': 'Start a new session in the current workspace',
       'open-dir.description': 'Open this session’s workspace in your file manager',
       'copy-cwd.description': 'Copy the full workspace directory path',
+      'restart-dsh': 'Restart DSH',
+      'restart-dsh.description': 'Exit the DeepSeek Harness process and relaunch it with the original command line',
+      'restart-dsh.pending': 'Restarting DSH…',
+      'restart-dsh.success': 'DSH is restarting',
       'open-dir.success': 'Requested to open the workspace', 'copy-cwd.success': 'Workspace path copied',
       'export.success': 'Session log download started', 'plugin-market.success': 'Plugin market opened',
       'new-session.success': 'New session started',
@@ -243,6 +254,7 @@ window.__ModuleLoader__.load({
       'new-session': 'M12 8v8 M8 12h8 M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18',
       'open-dir': 'M3 8V5a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v2 M3 9h18l-3 11H3Z',
       'copy-cwd': 'M9 9h11v11H9Z M15 6V3H3v12h3',
+      'restart-dsh': 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8 M21 3v5h-5',
       /* Section glyphs are hand-authored to match each plugin's subject; the
          settings nav exposes no icon data to read, so nothing here is scanned. */
       user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M4.5 20a7.5 7.5 0 0 1 15 0',
@@ -1089,6 +1101,12 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       return true
     }
 
+    /** Configs saved before the restart action existed never list it; append
+        it once so existing rings gain the sector without a manual save. */
+    function migrateItems(items) {
+      return items.includes('restart-dsh') ? items : [...items, 'restart-dsh']
+    }
+
     function createDeps(ctx, t) {
       let current = { ...DEFAULT_CONFIG }
       const listeners = new Set()
@@ -1145,9 +1163,9 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
             accent: typeof parsed.accent === 'string' && ACCENT_RE.test(parsed.accent)
               ? parsed.accent.toLowerCase()
               : DEFAULT_ACCENT,
-            items: Array.isArray(parsed.items)
+            items: migrateItems(Array.isArray(parsed.items)
               ? parsed.items.filter(id => typeof id === 'string' && (FIXED_ITEMS.has(id) || id.startsWith(SECTION_PREFIX)))
-              : DEFAULT_ITEMS,
+              : DEFAULT_ITEMS),
           }
           publish()
         } catch {
@@ -1299,6 +1317,15 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
             case 'copy-cwd':
               await clipboardWrite(snapshot.cwd)
               return
+            case 'restart-dsh': {
+              const response = await fetch(new URL(RESTART_ROUTE, hostBase()), {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: '{}',
+              })
+              if (!response.ok) throw new Error(`restart failed: HTTP ${String(response.status)}`)
+              return
+            }
             default:
               throw new Error(`unknown action ${id}`)
           }
