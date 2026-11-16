@@ -21,26 +21,43 @@ const MAX_CONFIG_BYTES = 32 * 1024
 /** Only plain #rrggbb accents are accepted; anything else falls back. */
 const ACCENT_RE = /^#[0-9a-fA-F]{6}$/
 const DEFAULT_ACCENT = '#67dce7'
-/** Disc style used when no valid saved choice exists; leads the picker. */
-const DEFAULT_STYLE = 'liquid'
 const ALL_ITEMS = [
   'plugin-market', 'new-session',
   'open-dir', 'copy-cwd',
   'restart-dsh',
 ]
 const DEFAULT_CONFIG = {
-  version: 1,
+  version: 2,
   enabled: true,
   scope: 'conversation',
   size: 200,
   duration: 380,
-  style: DEFAULT_STYLE,
+  blur: 1,
+  saturation: 1,
+  brightness: 1,
+  tint: 1,
+  specular: 1,
+  divider: 1,
+  fog: 1,
   motion: 'full',
   accent: DEFAULT_ACCENT,
   items: ALL_ITEMS.slice(),
 }
-/** Disc visual styles the client can render. */
-const DISC_STYLES = [DEFAULT_STYLE, 'glass', 'solid', 'neon', 'mist']
+/** Liquid-glass tuning knobs (unitless scales, 1 = default), shared with the
+    client so saved values are clamped to the same slider ranges. */
+const LIQUID_PARAMS = [
+  { key: 'blur', min: 0, max: 3 },
+  { key: 'saturation', min: 0, max: 3 },
+  { key: 'brightness', min: 0.5, max: 2 },
+  { key: 'tint', min: 0, max: 2.5 },
+  { key: 'specular', min: 0, max: 2.5 },
+  { key: 'divider', min: 0, max: 2.5 },
+  { key: 'fog', min: 0, max: 3 },
+]
+function liquidValue(raw, param) {
+  const n = Number(raw)
+  return Number.isFinite(n) ? Math.min(param.max, Math.max(param.min, n)) : 1
+}
 /** Motion tiers: full bounce, gentle grow, or follow the system preference. */
 const MOTION_MODES = ['full', 'soft', 'auto']
 
@@ -196,19 +213,15 @@ function sanitizeConfig(raw) {
     && (ALL_ITEMS.includes(id) || (id.startsWith('section:') && id.length > 8 && id.length <= 72))
   const items = Array.isArray(source.items) ? source.items.filter(allowed) : DEFAULT_CONFIG.items.slice()
   const unique = [...new Set(items)]
-  /* v1 shipped glass as its default, so a v1 file cannot tell an explicit
-     glass choice from the untouched default: ride those onto the new liquid
-     default once. Saves written by v2 clients carry version 2 and skip this. */
-  const legacy = (Number(source.version) || 1) < 2
-  let style = DISC_STYLES.includes(source.style) ? source.style : DEFAULT_CONFIG.style
-  if (legacy && style === 'glass') style = DEFAULT_STYLE
+  const liquid = {}
+  for (const param of LIQUID_PARAMS) liquid[param.key] = liquidValue(source[param.key], param)
   return {
     version: 2,
     enabled: source.enabled !== false,
     scope,
     size: Number.isFinite(size) ? Math.min(320, Math.max(140, Math.round(size))) : DEFAULT_CONFIG.size,
     duration: Number.isFinite(duration) ? Math.min(900, Math.max(120, Math.round(duration))) : DEFAULT_CONFIG.duration,
-    style,
+    ...liquid,
     motion: MOTION_MODES.includes(source.motion) ? source.motion : DEFAULT_CONFIG.motion,
     accent,
     items: unique.length > 0 ? unique : DEFAULT_CONFIG.items.slice(),

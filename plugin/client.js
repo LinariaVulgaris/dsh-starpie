@@ -35,11 +35,35 @@ window.__ModuleLoader__.load({
     /** Only plain #rrggbb accents are accepted; anything else falls back. */
     const ACCENT_RE = /^#[0-9a-fA-F]{6}$/
     const DEFAULT_ACCENT = '#67dce7'
-    /** Disc style used when no valid saved choice exists; leads the picker. */
+    /** The disc is always liquid glass now; this is the hard-coded data-style. */
     const DEFAULT_STYLE = 'liquid'
-    const DEFAULT_CONFIG = { version: 1, enabled: true, scope: 'conversation', size: 200, accent: DEFAULT_ACCENT, duration: 380, style: DEFAULT_STYLE, motion: 'full', items: DEFAULT_ITEMS }
-    /** Disc visual styles selectable in the settings section. */
-    const DISC_STYLES = [DEFAULT_STYLE, 'glass', 'solid', 'neon', 'mist']
+    const DEFAULT_CONFIG = { version: 2, enabled: true, scope: 'conversation', size: 200, accent: DEFAULT_ACCENT, duration: 380, blur: 1, saturation: 1, brightness: 1, tint: 1, specular: 1, divider: 1, fog: 1, motion: 'full', items: DEFAULT_ITEMS }
+    /** Liquid-glass tuning knobs. Each is a unitless scale where 1 reproduces
+        the tuned default exactly, so untouched sliders never shift the look.
+        Ranges keep alpha-bearing values within a sane clamp and never let the
+        material collapse to nothing at the low end. */
+    const LIQUID_PARAMS = [
+      { key: 'blur', css: '--lq-blur', min: 0, max: 3, step: 0.05 },
+      { key: 'saturation', css: '--lq-sat', min: 0, max: 3, step: 0.05 },
+      { key: 'brightness', css: '--lq-bright', min: 0.5, max: 2, step: 0.05 },
+      { key: 'tint', css: '--lq-tint', min: 0, max: 2.5, step: 0.05 },
+      { key: 'specular', css: '--lq-spec-hl', min: 0, max: 2.5, step: 0.05 },
+      { key: 'divider', css: '--lq-divider', min: 0, max: 2.5, step: 0.05 },
+      { key: 'fog', css: '--lq-fog', min: 0, max: 3, step: 0.05 },
+    ]
+    const LIQUID_BY_KEY = Object.fromEntries(LIQUID_PARAMS.map(param => [param.key, param]))
+    /** Clamp a saved liquid value into its slider range, defaulting to 1. */
+    function liquidValue(raw, key) {
+      const param = LIQUID_BY_KEY[key]
+      const n = Number(raw)
+      return Number.isFinite(n) ? Math.min(param.max, Math.max(param.min, n)) : 1
+    }
+    /** Inline custom properties driving the liquid-glass recipe from config. */
+    function liquidVars(config) {
+      const vars = {}
+      for (const param of LIQUID_PARAMS) vars[param.css] = String(liquidValue(config[param.key], param.key))
+      return vars
+    }
     /** Motion tiers: full bounce, gentle grow, or follow the system preference. */
     const MOTION_MODES = ['full', 'soft', 'auto']
     /** Prefix for dynamic ring items that open one settings section. */
@@ -186,8 +210,9 @@ window.__ModuleLoader__.load({
       'panel.scope.everywhere': '整个页面(输入框除外)',
       'panel.size': '圆盘大小',
       'panel.duration': '弹出时长',
-      'panel.style': '圆盘风格',
-      'style.liquid': '液态玻璃', 'style.glass': '玻璃', 'style.solid': '实色', 'style.neon': '霓虹', 'style.mist': '雾透',
+      'panel.liquid': '液态玻璃微调',
+      'panel.blur': '模糊强度', 'panel.saturation': '饱和度', 'panel.brightness': '亮度',
+      'panel.tint': '底色浓度', 'panel.specular': '镜面高光', 'panel.divider': '分割线', 'panel.fog': '雾面光泽',
       'panel.motion': '动效强度',
       'motion.full': 'Q 弹(始终完整动画)', 'motion.soft': '轻柔(仅缩放淡入)', 'motion.auto': '跟随系统',
       'panel.accent': '主题颜色',
@@ -245,8 +270,9 @@ window.__ModuleLoader__.load({
       'panel.scope.everywhere': 'Whole page (except inputs)',
       'panel.size': 'Ring size',
       'panel.duration': 'Pop-in duration',
-      'panel.style': 'Disc style',
-      'style.liquid': 'Liquid glass', 'style.glass': 'Glass', 'style.solid': 'Solid', 'style.neon': 'Neon', 'style.mist': 'Mist',
+      'panel.liquid': 'Liquid glass tuning',
+      'panel.blur': 'Blur', 'panel.saturation': 'Saturation', 'panel.brightness': 'Brightness',
+      'panel.tint': 'Tint opacity', 'panel.specular': 'Specular rim', 'panel.divider': 'Dividers', 'panel.fog': 'Fog sheen',
       'panel.motion': 'Motion',
       'motion.full': 'Springy (always full)', 'motion.soft': 'Gentle (grow + fade)', 'motion.auto': 'Follow system',
       'panel.accent': 'Theme color',
@@ -304,16 +330,16 @@ window.__ModuleLoader__.load({
       h('path', { d: ICON_PATHS[name] ?? ICON_PATHS.close, stroke: circular ? '#fff' : undefined, strokeWidth: circular ? 2 : undefined }))
     }
 
-    const STYLE_TAG = 'dsh-radial-menu/styles/v7'
+    const STYLE_TAG = 'dsh-radial-menu/styles/v8'
     /** Earlier sheets this bundle supersedes; removed before the new one loads. */
-    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6']
+    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7']
     const CSS = `
 [data-drm-layer], [data-drm-settings] { --drm-accent: #67dce7; --drm-accent-rgb: 103 220 231; --drm-accent-strong: #67dce7; --drm-accent-strong-rgb: 103 220 231; --drm-accent-solid: #67dce7; --drm-accent-solid-fg: #06333a; --drm-accent-solid-hover: #8fe9f1; --drm-accent-fg: #06333a; --drm-tint-pie: 8%; --drm-tint-hole: 14%; --drm-tint-active-1: 6%; --drm-tint-active-2: 15%; --drm-tint-active-3: 32%; --drm-elev: 0 16px 44px rgb(0 0 0 / .42); --drm-text-shadow: 0 1px 3px rgb(0 0 0 / .35); --drm-dur: 380ms; }
 [data-drm-layer] { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: var(--dsw-font-family, system-ui, sans-serif); }
 body:not([data-ds-dark-theme]) [data-drm-layer], body:not([data-ds-dark-theme]) [data-drm-settings] { --drm-tint-pie: 14%; --drm-tint-hole: 20%; --drm-tint-active-1: 9%; --drm-tint-active-2: 22%; --drm-tint-active-3: 46%; --drm-elev: 0 16px 40px rgb(15 23 42 / .22); --drm-text-shadow: 0 1px 2px rgb(255 255 255 / .6); }
 /* Liquid glass, light theme. Only the recipe variables change here; every
    element rule further down reads them, so dark and light share one structure. */
-body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec-mid: .5; --lq-spec-lo: .12; --lq-fog-top: .62; --lq-fog-bottom: .3; --lq-fog-wash: .22; --pie-bg: radial-gradient(circle closest-side, transparent 92.5%, rgb(255 255 255 / .5) 94%, transparent 95.6%), radial-gradient(circle closest-side, transparent 70%, rgb(255 255 255 / .28) 100%), radial-gradient(circle at 50% 112%, rgb(var(--drm-accent-rgb) / .14), transparent 58%), linear-gradient(155deg, rgb(255 255 255 / .55), rgb(255 255 255 / .12) 42%, rgb(255 255 255 / .04) 64%, rgb(255 255 255 / .28)), rgb(238 242 248 / .44); --pie-shadow: 0 0 0 .5px rgb(15 23 42 / .16), 0 28px 56px -12px rgb(15 23 42 / .32), 0 8px 18px -6px rgb(15 23 42 / .14), inset 0 0 0 1px rgb(255 255 255 / .35), inset 2px 3px 5px -2px rgb(255 255 255 / .95), inset -2px -3px 5px -2px rgb(255 255 255 / .6), inset 0 0 40px rgb(255 255 255 / .22); --pie-blur: blur(20px) saturate(1.8) brightness(1.04); --pie-rim: rgb(255 255 255 / .85); --pie-divider: rgb(15 23 42 / .16); --pie-hole-bg: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .85), transparent 58%), radial-gradient(circle at 50% 120%, rgb(var(--drm-accent-rgb) / .2), transparent 62%), linear-gradient(160deg, rgb(255 255 255 / .5), rgb(255 255 255 / .12)), rgb(240 244 250 / .5); --lq-hole-border: rgb(15 23 42 / .1); --lq-hole-shadow: 0 8px 18px -4px rgb(15 23 42 / .28), 0 1px 3px rgb(15 23 42 / .14), inset 1.5px 2px 3px -1px rgb(255 255 255 / .95), inset -1.5px -2px 3px -1px rgb(255 255 255 / .6), inset 0 0 14px rgb(255 255 255 / .35); --lq-hole-hover-shadow: 0 0 0 1px rgb(var(--drm-accent-strong-rgb) / .5), 0 0 20px rgb(var(--drm-accent-strong-rgb) / .35), 0 8px 18px -4px rgb(15 23 42 / .26), inset 1.5px 2px 3px -1px rgb(255 255 255 / .95), inset -1.5px -2px 3px -1px rgb(255 255 255 / .6); --lq-active-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .12) 52%, rgb(var(--drm-accent-strong-rgb) / .26) 78%, rgb(var(--drm-accent-strong-rgb) / .1) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .3) 52%, rgb(255 255 255 / .6) 78%, rgb(255 255 255 / .3) 94%); --lq-press-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .2) 52%, rgb(var(--drm-accent-strong-rgb) / .38) 78%, rgb(var(--drm-accent-strong-rgb) / .16) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .45) 52%, rgb(255 255 255 / .8) 78%, rgb(255 255 255 / .45) 94%); }
+body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var(--lq-spec-hl, 1)); --lq-spec-mid: calc(.5 * var(--lq-spec-hl, 1)); --lq-spec-lo: calc(.12 * var(--lq-spec-hl, 1)); --lq-fog-top: .62; --lq-fog-bottom: .3; --lq-fog-wash: .22; --pie-bg: radial-gradient(circle closest-side, transparent 92.5%, rgb(255 255 255 / .5) 94%, transparent 95.6%), radial-gradient(circle closest-side, transparent 70%, rgb(255 255 255 / .28) 100%), radial-gradient(circle at 50% 112%, rgb(var(--drm-accent-rgb) / .14), transparent 58%), linear-gradient(155deg, rgb(255 255 255 / .55), rgb(255 255 255 / .12) 42%, rgb(255 255 255 / .04) 64%, rgb(255 255 255 / .28)), rgb(238 242 248 / calc(.44 * var(--lq-tint, 1))); --pie-shadow: 0 0 0 .5px rgb(15 23 42 / .16), 0 28px 56px -12px rgb(15 23 42 / .32), 0 8px 18px -6px rgb(15 23 42 / .14), inset 0 0 0 1px rgb(255 255 255 / .35), inset 2px 3px 5px -2px rgb(255 255 255 / .95), inset -2px -3px 5px -2px rgb(255 255 255 / .6), inset 0 0 40px rgb(255 255 255 / .22); --pie-blur: blur(calc(20px * var(--lq-blur, 1))) saturate(calc(1.8 * var(--lq-sat, 1))) brightness(calc(1.04 * var(--lq-bright, 1))); --pie-rim: rgb(255 255 255 / .85); --pie-divider: rgb(15 23 42 / calc(.16 * var(--lq-divider, 1))); --pie-hole-bg: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .85), transparent 58%), radial-gradient(circle at 50% 120%, rgb(var(--drm-accent-rgb) / .2), transparent 62%), linear-gradient(160deg, rgb(255 255 255 / .5), rgb(255 255 255 / .12)), rgb(240 244 250 / .5); --lq-hole-border: rgb(15 23 42 / .1); --lq-hole-shadow: 0 8px 18px -4px rgb(15 23 42 / .28), 0 1px 3px rgb(15 23 42 / .14), inset 1.5px 2px 3px -1px rgb(255 255 255 / .95), inset -1.5px -2px 3px -1px rgb(255 255 255 / .6), inset 0 0 14px rgb(255 255 255 / .35); --lq-hole-hover-shadow: 0 0 0 1px rgb(var(--drm-accent-strong-rgb) / .5), 0 0 20px rgb(var(--drm-accent-strong-rgb) / .35), 0 8px 18px -4px rgb(15 23 42 / .26), inset 1.5px 2px 3px -1px rgb(255 255 255 / .95), inset -1.5px -2px 3px -1px rgb(255 255 255 / .6); --lq-active-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .12) 52%, rgb(var(--drm-accent-strong-rgb) / .26) 78%, rgb(var(--drm-accent-strong-rgb) / .1) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .3) 52%, rgb(255 255 255 / .6) 78%, rgb(255 255 255 / .3) 94%); --lq-press-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .2) 52%, rgb(var(--drm-accent-strong-rgb) / .38) 78%, rgb(var(--drm-accent-strong-rgb) / .16) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .45) 52%, rgb(255 255 255 / .8) 78%, rgb(255 255 255 / .45) 94%); }
 [data-drm-settings] { display: flex; flex-direction: column; max-width: 560px; color: var(--dsw-alias-label-primary, #e8edf4); }
 [data-drm-settings] h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
 [data-drm-settings] p { margin: 0 0 14px; font-size: 12px; color: var(--dsw-alias-label-secondary, #a8b4c2); }
@@ -347,7 +373,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
    second nested blur forced Chromium to re-sample the whole disc surface. It
    is pure gradient: a broad specular sheen from the upper left and a faint
    bounce light from the lower right, strengths set by --lq-fog-* per theme. */
-[data-drm-fog] { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 1; background: radial-gradient(120% 72% at 28% 0%, rgb(255 255 255 / var(--lq-fog-top, .2)), transparent 56%), radial-gradient(90% 60% at 82% 108%, rgb(255 255 255 / var(--lq-fog-bottom, .1)), transparent 62%), linear-gradient(180deg, rgb(255 255 255 / var(--lq-fog-wash, .04)), transparent 34%); }
+[data-drm-fog] { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 1; background: radial-gradient(120% 72% at 28% 0%, rgb(255 255 255 / calc(var(--lq-fog-top, .2) * var(--lq-fog, 1))), transparent 56%), radial-gradient(90% 60% at 82% 108%, rgb(255 255 255 / calc(var(--lq-fog-bottom, .1) * var(--lq-fog, 1))), transparent 62%), linear-gradient(180deg, rgb(255 255 255 / calc(var(--lq-fog-wash, .04) * var(--lq-fog, 1))), transparent 34%); }
 /* ---- disc styles: each one only swaps the fill / rim / divider / hole palette ---- */
 /* Liquid glass (iOS-style). The surface is a clear, lightly tinted pane over a
    strong blur with boosted saturation and brightness, so what is behind it
@@ -356,7 +382,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
    the lower right, a bevel from inset shadows, and a luminous band near the
    border that fakes the lens thickness. Dark values here; the light theme
    overrides only the variables (see the body:not(...) rule above). */
-[data-style="liquid"] { --lq-spec: .85; --lq-spec-mid: .3; --lq-spec-lo: .05; --lq-fog-top: .2; --lq-fog-bottom: .1; --lq-fog-wash: .04; --pie-bg: radial-gradient(circle closest-side, transparent 92.5%, rgb(255 255 255 / .1) 94%, transparent 95.6%), radial-gradient(circle closest-side, transparent 72%, rgb(255 255 255 / .07) 100%), radial-gradient(circle at 50% 112%, rgb(var(--drm-accent-rgb) / .12), transparent 58%), linear-gradient(155deg, rgb(255 255 255 / .12), rgb(255 255 255 / .02) 40%, rgb(255 255 255 / .01) 62%, rgb(255 255 255 / .06)), rgb(24 26 32 / .38); --pie-shadow: 0 0 0 .5px rgb(0 0 0 / .3), 0 30px 60px -14px rgb(0 0 0 / .55), 0 10px 22px -6px rgb(0 0 0 / .28), inset 0 0 0 1px rgb(255 255 255 / .06), inset 2px 3px 5px -2px rgb(255 255 255 / .55), inset -2px -3px 5px -2px rgb(255 255 255 / .3), inset 0 0 36px rgb(255 255 255 / .06); --pie-blur: blur(18px) saturate(1.8) brightness(1.1); --pie-rim: rgb(255 255 255 / .22); --pie-divider: rgb(255 255 255 / .3); --pie-hole-bg: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .3), transparent 58%), radial-gradient(circle at 50% 120%, rgb(var(--drm-accent-rgb) / .16), transparent 62%), linear-gradient(160deg, rgb(255 255 255 / .1), rgb(255 255 255 / .02)), rgb(30 32 38 / .3); --lq-hole-border: rgb(255 255 255 / .16); --lq-hole-shadow: 0 8px 20px -4px rgb(0 0 0 / .45), 0 1px 3px rgb(0 0 0 / .25), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3), inset 0 0 14px rgb(255 255 255 / .08); --lq-hole-hover-shadow: 0 0 0 1px rgb(var(--drm-accent-strong-rgb) / .55), 0 0 20px rgb(var(--drm-accent-strong-rgb) / .35), 0 8px 20px -4px rgb(0 0 0 / .4), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3); --lq-active-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .08) 52%, rgb(var(--drm-accent-strong-rgb) / .16) 78%, rgb(var(--drm-accent-strong-rgb) / .06) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .08) 52%, rgb(255 255 255 / .17) 78%, rgb(255 255 255 / .07) 94%); --lq-press-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .16) 52%, rgb(var(--drm-accent-strong-rgb) / .3) 78%, rgb(var(--drm-accent-strong-rgb) / .12) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .14) 52%, rgb(255 255 255 / .28) 78%, rgb(255 255 255 / .12) 94%); }
+[data-style="liquid"] { --lq-spec: calc(.85 * var(--lq-spec-hl, 1)); --lq-spec-mid: calc(.3 * var(--lq-spec-hl, 1)); --lq-spec-lo: calc(.05 * var(--lq-spec-hl, 1)); --lq-fog-top: .2; --lq-fog-bottom: .1; --lq-fog-wash: .04; --pie-bg: radial-gradient(circle closest-side, transparent 92.5%, rgb(255 255 255 / .1) 94%, transparent 95.6%), radial-gradient(circle closest-side, transparent 72%, rgb(255 255 255 / .07) 100%), radial-gradient(circle at 50% 112%, rgb(var(--drm-accent-rgb) / .12), transparent 58%), linear-gradient(155deg, rgb(255 255 255 / .12), rgb(255 255 255 / .02) 40%, rgb(255 255 255 / .01) 62%, rgb(255 255 255 / .06)), rgb(24 26 32 / calc(.38 * var(--lq-tint, 1))); --pie-shadow: 0 0 0 .5px rgb(0 0 0 / .3), 0 30px 60px -14px rgb(0 0 0 / .55), 0 10px 22px -6px rgb(0 0 0 / .28), inset 0 0 0 1px rgb(255 255 255 / .06), inset 2px 3px 5px -2px rgb(255 255 255 / .55), inset -2px -3px 5px -2px rgb(255 255 255 / .3), inset 0 0 36px rgb(255 255 255 / .06); --pie-blur: blur(calc(18px * var(--lq-blur, 1))) saturate(calc(1.8 * var(--lq-sat, 1))) brightness(calc(1.1 * var(--lq-bright, 1))); --pie-rim: rgb(255 255 255 / .22); --pie-divider: rgb(255 255 255 / calc(.3 * var(--lq-divider, 1))); --pie-hole-bg: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .3), transparent 58%), radial-gradient(circle at 50% 120%, rgb(var(--drm-accent-rgb) / .16), transparent 62%), linear-gradient(160deg, rgb(255 255 255 / .1), rgb(255 255 255 / .02)), rgb(30 32 38 / .3); --lq-hole-border: rgb(255 255 255 / .16); --lq-hole-shadow: 0 8px 20px -4px rgb(0 0 0 / .45), 0 1px 3px rgb(0 0 0 / .25), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3), inset 0 0 14px rgb(255 255 255 / .08); --lq-hole-hover-shadow: 0 0 0 1px rgb(var(--drm-accent-strong-rgb) / .55), 0 0 20px rgb(var(--drm-accent-strong-rgb) / .35), 0 8px 20px -4px rgb(0 0 0 / .4), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3); --lq-active-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .08) 52%, rgb(var(--drm-accent-strong-rgb) / .16) 78%, rgb(var(--drm-accent-strong-rgb) / .06) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .08) 52%, rgb(255 255 255 / .17) 78%, rgb(255 255 255 / .07) 94%); --lq-press-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .16) 52%, rgb(var(--drm-accent-strong-rgb) / .3) 78%, rgb(var(--drm-accent-strong-rgb) / .12) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .14) 52%, rgb(255 255 255 / .28) 78%, rgb(255 255 255 / .12) 94%); }
 /* Specular rim: a 1.5px ring cut out of a conic gradient with a mask. The
    highlight sits at the upper left (315deg) and, weaker, at the opposite side. */
 [data-drm-pie][data-style="liquid"]::before { inset: 0; border: 0; padding: 1.5px; background: conic-gradient(from 315deg, rgb(255 255 255 / var(--lq-spec)) 0deg, rgb(255 255 255 / var(--lq-spec-mid)) 28deg, rgb(255 255 255 / var(--lq-spec-lo)) 78deg, rgb(255 255 255 / var(--lq-spec-lo)) 112deg, rgb(255 255 255 / var(--lq-spec-mid)) 152deg, rgb(255 255 255 / calc(var(--lq-spec) * .7)) 180deg, rgb(255 255 255 / var(--lq-spec-mid)) 208deg, rgb(255 255 255 / var(--lq-spec-lo)) 258deg, rgb(255 255 255 / var(--lq-spec-lo)) 292deg, rgb(255 255 255 / var(--lq-spec-mid)) 332deg, rgb(255 255 255 / var(--lq-spec)) 360deg); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask-composite: xor; }
@@ -426,6 +452,10 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
 [data-drm-settings] input[type="checkbox"], [data-drm-settings] input[type="range"], [data-drm-settings] select { accent-color: var(--drm-accent); }
 [data-drm-panel-field] select { background: var(--dsw-alias-bg-layer-2, #232932); color: inherit; border: 1px solid var(--dsw-alias-border-l2, #3a4250); border-radius: 8px; padding: 5px 8px; }
 [data-drm-panel-field] input[type="range"] { height: 4px; border-radius: 2px; background: var(--dsw-alias-border-l2, #3a4250); cursor: pointer; }
+[data-drm-panel-group] { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 14px; padding: 12px 12px 6px; border: 1px solid var(--dsw-alias-border-l1, #2c3440); border-radius: 12px; background: var(--dsw-alias-bg-layer-2, rgb(255 255 255 / .02)); }
+[data-drm-panel-group] h3 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--dsw-alias-label-secondary, #a8b4c2); }
+[data-drm-panel-group] [data-drm-panel-field] { margin: 0; }
+[data-drm-panel-group] [data-drm-panel-field] span { flex: none; min-width: 104px; color: var(--dsw-alias-label-secondary, #a8b4c2); font-variant-numeric: tabular-nums; }
 [data-drm-accent-field] { margin: 0 0 12px; }
 [data-drm-accent-field] > [data-drm-accent-caption] { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; }
 [data-drm-swatch-hex] { margin-left: auto; font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--drm-accent-strong); text-transform: uppercase; }
@@ -657,7 +687,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
         h('div', {
           'data-drm-frost': '', 'aria-hidden': true,
           key: `frost:${open.x}:${open.y}:${open.size}`,
-          'data-style': props.discStyle ?? DEFAULT_STYLE,
+          'data-style': DEFAULT_STYLE,
           style: {
             left: open.x, top: open.y,
             '--drm-size': `${open.size}px`,
@@ -667,7 +697,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
           ref: menuElement, 'data-drm-pie': '', role: 'menu', 'aria-label': t('menu'),
           key: `${open.x}:${open.y}:${open.size}:${open.closing ? 'closing' : 'open'}`,
           'data-closing': open.closing ? '' : undefined,
-          'data-style': props.discStyle ?? DEFAULT_STYLE,
+          'data-style': DEFAULT_STYLE,
           onAnimationEnd: (event) => {
             if (event.target !== event.currentTarget) return
             if (open.closing) props.onClosed()
@@ -691,7 +721,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
         },
         /* Diffused haze pass, liquid style only, so the backdrop reads as
            light through frosted glass rather than sharp shapes. */
-        props.discStyle === 'liquid' ? h('div', { 'data-drm-fog': '', 'aria-hidden': true }) : null,
+        h('div', { 'data-drm-fog': '', 'aria-hidden': true }),
         h('button', {
           ref: centerElement, 'data-drm-hole': '', type: 'button', 'aria-label': t('cancel'),
           tabIndex: open.closing ? -1 : undefined,
@@ -778,7 +808,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
     }
 
     /** The settings-panel section that edits the ring: scope, size, duration,
-        disc style, motion tier, accent, and which actions the ring shows. */
+        liquid-glass tuning, motion tier, accent, and which actions it shows. */
     function AstrolabeSettings(props) {
       const { deps } = props
       const t = deps.t
@@ -789,7 +819,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       const [scope, setScope] = useState(config.scope)
       const [size, setSize] = useState(config.size)
       const [duration, setDuration] = useState(Number.isFinite(config.duration) ? config.duration : 380)
-      const [style, setStyle] = useState(DISC_STYLES.includes(config.style) ? config.style : DEFAULT_STYLE)
+      const [liquid, setLiquid] = useState(() => Object.fromEntries(LIQUID_PARAMS.map(param => [param.key, liquidValue(config[param.key], param.key)])))
       const [motion, setMotion] = useState(MOTION_MODES.includes(config.motion) ? config.motion : 'full')
       const [accent, setAccent] = useState(ACCENT_RE.test(config.accent) ? config.accent : DEFAULT_ACCENT)
       const [saving, setSaving] = useState(false)
@@ -801,7 +831,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
         setScope(config.scope)
         setSize(config.size)
         setDuration(Number.isFinite(config.duration) ? config.duration : 380)
-        setStyle(DISC_STYLES.includes(config.style) ? config.style : DEFAULT_STYLE)
+        setLiquid(Object.fromEntries(LIQUID_PARAMS.map(param => [param.key, liquidValue(config[param.key], param.key)])))
         setMotion(MOTION_MODES.includes(config.motion) ? config.motion : 'full')
         setAccent(ACCENT_RE.test(config.accent) ? config.accent : DEFAULT_ACCENT)
       }, [config])
@@ -841,7 +871,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       const submit = async () => {
         if (saving) return
         setSaving(true)
-        const ok = await deps.saveConfig({ items: listed, scope, size, duration, style, motion, accent })
+        const ok = await deps.saveConfig({ items: listed, scope, size, duration, motion, accent, ...liquid })
         setSaving(false)
         setNotice(ok ? 'saved' : 'failed')
       }
@@ -864,16 +894,15 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
           type: 'range', min: 120, max: 900, step: 20, value: duration,
           onChange: (event) => setDuration(Number(event.target.value)),
         })),
-      h('div', { 'data-drm-panel-field': '' },
-        h('span', null, t('panel.style')),
-        h('div', { 'data-drm-style-row': '', role: 'group', 'aria-label': t('panel.style') },
-          DISC_STYLES.map(id => h('button', {
-            type: 'button', key: id, 'data-drm-style-option': '',
-            'aria-pressed': style === id, 'aria-label': t(`style.${id}`),
-            title: t(`style.${id}`),
-            'data-selected': style === id ? '' : undefined,
-            onClick: () => setStyle(id),
-          }, t(`style.${id}`))))),
+      h('div', { 'data-drm-panel-group': '', role: 'group', 'aria-label': t('panel.liquid') },
+        h('h3', null, t('panel.liquid')),
+        LIQUID_PARAMS.map(param => h('div', { 'data-drm-panel-field': '', key: param.key },
+          h('span', null, `${t(`panel.${param.key}`)} ${Math.round(liquid[param.key] * 100)}%`),
+          h('input', {
+            type: 'range', min: param.min, max: param.max, step: param.step, value: liquid[param.key],
+            'aria-label': t(`panel.${param.key}`),
+            onChange: (event) => setLiquid(prev => ({ ...prev, [param.key]: Number(event.target.value) })),
+          })))),
       h('div', { 'data-drm-panel-field': '' },
         h('span', null, t('panel.motion')),
         h('select', { value: motion, onChange: (event) => setMotion(event.target.value) },
@@ -903,7 +932,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       h('div', { 'data-drm-panel-foot': '' },
         h('button', {
           type: 'button', 'data-drm-reset': '',
-          onClick: () => { setItems(DEFAULT_ITEMS.slice()); setChecked(new Set(DEFAULT_ITEMS)); setScope('conversation'); setSize(200); setDuration(380); setStyle(DEFAULT_STYLE); setMotion('full'); setAccent(DEFAULT_ACCENT) },
+          onClick: () => { setItems(DEFAULT_ITEMS.slice()); setChecked(new Set(DEFAULT_ITEMS)); setScope('conversation'); setSize(200); setDuration(380); setLiquid(Object.fromEntries(LIQUID_PARAMS.map(param => [param.key, 1]))); setMotion('full'); setAccent(DEFAULT_ACCENT) },
         }, t('panel.reset')),
         notice !== null ? h('span', { 'data-drm-save-note': '', 'data-kind': notice === 'saved' ? 'success' : 'error' },
           notice === 'saved' ? t('panel.saved') : t('panel.saveFailed')) : null,
@@ -1148,11 +1177,10 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
         ? (systemReduce ? 'soft' : 'full')
         : MOTION_MODES.includes(config.motion) ? config.motion : 'full'
 
-      return h('div', { 'data-drm-layer': '', 'data-motion': motionTier, style: accentVars(config.accent) },
+      return h('div', { 'data-drm-layer': '', 'data-motion': motionTier, style: { ...accentVars(config.accent), ...liquidVars(config) } },
         h(RadialPie, {
           open, hover, setHover, actions, state: menuState, t, onClose: close, onClosed: finishClose,
           duration: config.duration,
-          discStyle: DISC_STYLES.includes(config.style) ? config.style : DEFAULT_STYLE,
           onExecute: (id) => { void execute(id) }, openRef,
           labelOf: props.deps.itemLabel, describe: props.deps.itemDescription, iconOf: props.deps.itemIcon,
         }),
@@ -1246,15 +1274,18 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
           if (!response.ok) return
           const parsed = await response.json()
           if (parsed === null || typeof parsed !== 'object') return
-          /* Mirror the Host migration: v1 files saved glass as the default. */
-          const legacy = (Number(parsed.version) || 1) < 2
-          const parsedStyle = legacy && parsed.style === 'glass' ? DEFAULT_STYLE : parsed.style
           current = {
             enabled: parsed.enabled === true,
             scope: parsed.scope === 'everywhere' ? 'everywhere' : 'conversation',
             size: Math.min(320, Math.max(140, Number(parsed.size) || 200)),
             duration: Math.min(900, Math.max(120, Number(parsed.duration) || 380)),
-            style: DISC_STYLES.includes(parsedStyle) ? parsedStyle : DEFAULT_STYLE,
+            blur: liquidValue(parsed.blur, 'blur'),
+            saturation: liquidValue(parsed.saturation, 'saturation'),
+            brightness: liquidValue(parsed.brightness, 'brightness'),
+            tint: liquidValue(parsed.tint, 'tint'),
+            specular: liquidValue(parsed.specular, 'specular'),
+            divider: liquidValue(parsed.divider, 'divider'),
+            fog: liquidValue(parsed.fog, 'fog'),
             motion: MOTION_MODES.includes(parsed.motion) ? parsed.motion : 'full',
             accent: typeof parsed.accent === 'string' && ACCENT_RE.test(parsed.accent)
               ? parsed.accent.toLowerCase()
