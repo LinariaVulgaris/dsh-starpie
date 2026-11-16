@@ -956,6 +956,9 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       const stateRef = useRef(state)
       const depsRef = useRef(props.deps)
       const configRef = useRef(config)
+      /* Holds the menu snapshot captured when the restart dialog opens, so the
+         confirmed run can proceed after the ring has closed (openRef is null). */
+      const restartSnapshotRef = useRef(null)
       openRef.current = open
       stateRef.current = state
       depsRef.current = props.deps
@@ -1095,19 +1098,28 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       const t = props.deps.t
       const [confirmRestart, setConfirmRestart] = useState(false)
       const execute = async (id, confirmed = false) => {
-        const menu = openRef.current
-        if (menu === null || busyRef.current) return
-        const snapshot = { ...menu.snapshot, running: stateRef.current.running }
-        if (!isActionEnabled(id, snapshot)) {
-          setHover(null)
-          return
-        }
-        /* The restart sector is the only destructive action: it interrupts
-           every running task and the shell itself, so it asks first. */
-        if (id === 'restart-dsh' && !confirmed) {
-          close()
-          setConfirmRestart(true)
-          return
+        if (busyRef.current) return
+        /* The confirmed restart arrives after the ring has already closed, so
+           openRef is null; reuse the snapshot captured when the dialog opened. */
+        let snapshot
+        if (confirmed && restartSnapshotRef.current !== null) {
+          snapshot = restartSnapshotRef.current
+        } else {
+          const menu = openRef.current
+          if (menu === null) return
+          snapshot = { ...menu.snapshot, running: stateRef.current.running }
+          if (!isActionEnabled(id, snapshot)) {
+            setHover(null)
+            return
+          }
+          /* The restart sector is the only destructive action: it interrupts
+             every running task and the shell itself, so it asks first. */
+          if (id === 'restart-dsh' && !confirmed) {
+            restartSnapshotRef.current = snapshot
+            close()
+            setConfirmRestart(true)
+            return
+          }
         }
         busyRef.current = true
         setFeedback({ kind: 'pending', text: props.deps.itemPending(id) })
@@ -1122,6 +1134,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
           if (aliveRef.current) setFeedback({ kind: 'error', text: message })
         } finally {
           busyRef.current = false
+          restartSnapshotRef.current = null
         }
       }
 
