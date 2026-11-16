@@ -158,6 +158,12 @@ window.__ModuleLoader__.load({
       'restart-dsh.description': '退出当前 DeepSeek Harness 进程,并以原启动命令重新拉起',
       'restart-dsh.pending': '正在重启 DSH…',
       'restart-dsh.success': 'DSH 正在重启',
+      'restart-dsh.confirm.title': '重启 DSH',
+      'restart-dsh.confirm.body': '将退出当前 DeepSeek Harness 进程,并以原启动方式重新拉起。所有正在运行的任务与进行中的 AI 输出会被立即中断。',
+      'restart-dsh.confirm.running': '检测到当前会话的 AI 正在思考或输出,重启会丢失这一轮的内容。',
+      'restart-dsh.confirm.hint': '桌面版:窗口将关闭并在数秒后自动重新打开;Web 版:重启后请用新地址重新打开页面。',
+      'restart-dsh.confirm.cancel': '取消',
+      'restart-dsh.confirm.ok': '确认重启',
       'open-dir.success': '已请求打开工作目录', 'copy-cwd.success': '工作目录路径已复制',
       'export.success': '已开始下载会话日志', 'plugin-market.success': '已打开插件市场',
       'new-session.success': '已开始新会话',
@@ -210,6 +216,12 @@ window.__ModuleLoader__.load({
       'restart-dsh.description': 'Exit the DeepSeek Harness process and relaunch it with the original command line',
       'restart-dsh.pending': 'Restarting DSH…',
       'restart-dsh.success': 'DSH is restarting',
+      'restart-dsh.confirm.title': 'Restart DSH',
+      'restart-dsh.confirm.body': 'This exits the current DeepSeek Harness process and relaunches it the way it was started. Every running task and in-flight AI output is interrupted immediately.',
+      'restart-dsh.confirm.running': 'The AI in this session is thinking or streaming right now; restarting loses this turn’s output.',
+      'restart-dsh.confirm.hint': 'Desktop: the window closes and reopens automatically after a few seconds. Web: reopen the page at the new address afterwards.',
+      'restart-dsh.confirm.cancel': 'Cancel',
+      'restart-dsh.confirm.ok': 'Restart now',
       'open-dir.success': 'Requested to open the workspace', 'copy-cwd.success': 'Workspace path copied',
       'export.success': 'Session log download started', 'plugin-market.success': 'Plugin market opened',
       'new-session.success': 'New session started',
@@ -290,9 +302,9 @@ window.__ModuleLoader__.load({
       h('path', { d: ICON_PATHS[name] ?? ICON_PATHS.close, stroke: circular ? '#fff' : undefined, strokeWidth: circular ? 2 : undefined }))
     }
 
-    const STYLE_TAG = 'dsh-radial-menu/styles/v5'
+    const STYLE_TAG = 'dsh-radial-menu/styles/v6'
     /** Earlier sheets this bundle supersedes; removed before the new one loads. */
-    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4']
+    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5']
     const CSS = `
 [data-drm-layer], [data-drm-settings] { --drm-accent: #67dce7; --drm-accent-rgb: 103 220 231; --drm-accent-strong: #67dce7; --drm-accent-strong-rgb: 103 220 231; --drm-accent-solid: #67dce7; --drm-accent-solid-fg: #06333a; --drm-accent-solid-hover: #8fe9f1; --drm-accent-fg: #06333a; --drm-tint-pie: 8%; --drm-tint-hole: 14%; --drm-tint-active-1: 6%; --drm-tint-active-2: 15%; --drm-tint-active-3: 32%; --drm-elev: 0 16px 44px rgb(0 0 0 / .42); --drm-text-shadow: 0 1px 3px rgb(0 0 0 / .35); --drm-dur: 380ms; }
 [data-drm-layer] { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: var(--dsw-font-family, system-ui, sans-serif); }
@@ -438,6 +450,20 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
 [data-drm-save-note][data-kind="success"] { color: var(--dsw-alias-state-success-primary, #42bd7b); }
 [data-drm-save-note][data-kind="error"] { color: var(--dsw-alias-state-error-primary, #f16b73); }
 [data-drm-reset] { margin-right: auto; }
+/* Restart confirmation: a modal card over a dimmed page. Only the restart
+   sector ever opens it; every other action runs on click as before. */
+[data-drm-confirm] { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; pointer-events: auto; background: rgb(0 0 0 / .45); animation: drm-fade-soft .16s ease-out backwards; }
+[data-drm-confirm-card] { width: min(420px, calc(100vw - 40px)); box-sizing: border-box; padding: 18px 20px 16px; border: 1px solid var(--dsw-alias-border-l2, #3a4250); border-radius: 14px; background: var(--dsw-alias-bg-layer-1, #1d222a); box-shadow: 0 24px 60px rgb(0 0 0 / .5); color: var(--dsw-alias-label-primary, #e8edf4); }
+[data-drm-confirm-card] h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+[data-drm-confirm-card] p { margin: 0 0 8px; font-size: 13px; line-height: 1.55; color: var(--dsw-alias-label-secondary, #a8b4c2); }
+[data-drm-confirm-warn] { color: var(--dsw-alias-state-error-primary, #f16b73); font-weight: 500; }
+[data-drm-confirm-hint] { font-size: 12px; color: var(--dsw-alias-label-tertiary, #8997a7); }
+[data-drm-confirm-row] { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+[data-drm-confirm-row] button { appearance: none; padding: 7px 16px; border-radius: 9px; border: 1px solid var(--dsw-alias-border-l2, #3a4250); background: transparent; color: var(--dsw-alias-label-primary, #e8edf4); font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s, filter .15s; }
+[data-drm-confirm-row] button:hover { border-color: var(--drm-accent-strong); color: var(--drm-accent-strong); }
+[data-drm-confirm-row] button:focus-visible { outline: 2px solid var(--drm-accent-strong); outline-offset: 2px; }
+[data-drm-confirm-row] button[data-danger] { border-color: transparent; background: var(--dsw-alias-state-error-primary, #f16b73); color: #fff; font-weight: 600; }
+[data-drm-confirm-row] button[data-danger]:hover { filter: brightness(1.12); color: #fff; }
 @keyframes drm-toast-in { from { opacity: 0; transform: translate(-50%, -10px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
 @keyframes drm-spin { to { transform: rotate(360deg); } }
 @keyframes drm-bloom { from { opacity: 0; transform: translate(-50%, -50%) scale(.15); } 60% { opacity: 1; } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
@@ -878,6 +904,37 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
         h('button', { type: 'button', 'data-primary': '', disabled: saving || listed.length === 0, onClick: () => { void submit() } }, t('panel.save'))))
     }
 
+    /* ---------- restart confirmation ---------- */
+    /** Modal card shown only by the restart sector: names the interruption
+        cost, warns louder when the session is mid-generation, and says what
+        the relaunch looks like per platform. Esc cancels; Cancel is focused. */
+    function RestartConfirmDialog({ t, running, onCancel, onConfirm }) {
+      const cancelRef = useRef(null)
+      useEffect(() => { cancelRef.current?.focus({ preventScroll: true }) }, [])
+      useEffect(() => {
+        const onKey = (event) => {
+          if (event.key !== 'Escape') return
+          event.preventDefault()
+          event.stopPropagation()
+          onCancel()
+        }
+        document.addEventListener('keydown', onKey, true)
+        return () => document.removeEventListener('keydown', onKey, true)
+      }, [onCancel])
+      return h('div', {
+        'data-drm-confirm': '', role: 'alertdialog', 'aria-modal': true,
+        'aria-label': t('restart-dsh.confirm.title'),
+      },
+      h('div', { 'data-drm-confirm-card': '' },
+        h('h3', null, t('restart-dsh.confirm.title')),
+        h('p', null, t('restart-dsh.confirm.body')),
+        running ? h('p', { 'data-drm-confirm-warn': '' }, t('restart-dsh.confirm.running')) : null,
+        h('p', { 'data-drm-confirm-hint': '' }, t('restart-dsh.confirm.hint')),
+        h('div', { 'data-drm-confirm-row': '' },
+          h('button', { ref: cancelRef, type: 'button', onClick: onCancel }, t('restart-dsh.confirm.cancel')),
+          h('button', { type: 'button', 'data-danger': '', onClick: onConfirm }, t('restart-dsh.confirm.ok')))))
+    }
+
     /* ---------- overlay root ---------- */
     function RadialMenu(props) {
       const state = props.useSessions(readState, equalState)
@@ -1023,12 +1080,20 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
       }, [state.sessionId, open, close])
 
       const t = props.deps.t
-      const execute = async (id) => {
+      const [confirmRestart, setConfirmRestart] = useState(false)
+      const execute = async (id, confirmed = false) => {
         const menu = openRef.current
         if (menu === null || busyRef.current) return
         const snapshot = { ...menu.snapshot, running: stateRef.current.running }
         if (!isActionEnabled(id, snapshot)) {
           setHover(null)
+          return
+        }
+        /* The restart sector is the only destructive action: it interrupts
+           every running task and the shell itself, so it asks first. */
+        if (id === 'restart-dsh' && !confirmed) {
+          close()
+          setConfirmRestart(true)
           return
         }
         busyRef.current = true
@@ -1065,6 +1130,11 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: .95; --lq-spec
           onExecute: (id) => { void execute(id) }, openRef,
           labelOf: props.deps.itemLabel, describe: props.deps.itemDescription, iconOf: props.deps.itemIcon,
         }),
+        confirmRestart ? h(RestartConfirmDialog, {
+          t, running: state.running,
+          onCancel: () => setConfirmRestart(false),
+          onConfirm: () => { setConfirmRestart(false); void execute('restart-dsh', true) },
+        }) : null,
         h('div', { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
           feedback !== null ? h('div', { 'data-drm-toast': '', 'data-kind': feedback.kind },
             h(MenuIcon, { name: feedback.kind === 'success' ? 'check-circle' : feedback.kind === 'error' ? 'error-circle' : 'loading', size: 20 }),
