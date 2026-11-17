@@ -336,10 +336,13 @@ window.__ModuleLoader__.load({
       h('path', { d: ICON_PATHS[name] ?? ICON_PATHS.close, stroke: circular ? '#fff' : undefined, strokeWidth: circular ? 2 : undefined }))
     }
 
-    const STYLE_TAG = 'dsh-radial-menu/styles/v14'
+    const STYLE_TAG = 'dsh-radial-menu/styles/v16'
     /** Earlier sheets this bundle supersedes; removed before the new one loads. */
-    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7', 'dsh-radial-menu/styles/v8', 'dsh-radial-menu/styles/v9', 'dsh-radial-menu/styles/v10', 'dsh-radial-menu/styles/v11', 'dsh-radial-menu/styles/v12', 'dsh-radial-menu/styles/v13']
+    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7', 'dsh-radial-menu/styles/v8', 'dsh-radial-menu/styles/v9', 'dsh-radial-menu/styles/v10', 'dsh-radial-menu/styles/v11', 'dsh-radial-menu/styles/v12', 'dsh-radial-menu/styles/v13', 'dsh-radial-menu/styles/v14', 'dsh-radial-menu/styles/v15']
     const CSS = `
+/* Registered so the sliding selection glow can interpolate its rotation:
+   an unregistered custom property would flip discretely between sectors. */
+@property --drm-glow-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 [data-drm-layer], [data-drm-settings] { --drm-accent: #67dce7; --drm-accent-rgb: 103 220 231; --drm-accent-strong: #67dce7; --drm-accent-strong-rgb: 103 220 231; --drm-accent-solid: #67dce7; --drm-accent-solid-fg: #06333a; --drm-accent-solid-hover: #8fe9f1; --drm-accent-fg: #06333a; --drm-tint-pie: 8%; --drm-tint-hole: 14%; --drm-tint-active-1: 6%; --drm-tint-active-2: 15%; --drm-tint-active-3: 32%; --drm-elev: 0 16px 44px rgb(0 0 0 / .42); --drm-text-shadow: 0 1px 3px rgb(0 0 0 / .35); --drm-dur: 380ms; }
 [data-drm-layer] { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: var(--dsw-font-family, system-ui, sans-serif); }
 body:not([data-ds-dark-theme]) [data-drm-layer], body:not([data-ds-dark-theme]) [data-drm-settings] { --drm-tint-pie: 14%; --drm-tint-hole: 20%; --drm-tint-active-1: 9%; --drm-tint-active-2: 22%; --drm-tint-active-3: 46%; --drm-elev: 0 16px 40px rgb(15 23 42 / .22); --drm-text-shadow: 0 1px 2px rgb(255 255 255 / .6); }
@@ -399,7 +402,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
    the lower right, a bevel from inset shadows, and a luminous band near the
    border that fakes the lens thickness. Dark values here; the light theme
    overrides only the variables (see the body:not(...) rule above). */
-[data-style="liquid"] { --lq-spec: calc(.85 * var(--lq-spec-hl, 1)); --lq-spec-mid: calc(.3 * var(--lq-spec-hl, 1)); --lq-spec-lo: calc(.05 * var(--lq-spec-hl, 1)); --lq-fog-top: .2; --lq-fog-bottom: .1; --lq-fog-wash: .04; --pie-bg: radial-gradient(circle closest-side, transparent 92.5%, rgb(255 255 255 / .1) 94%, transparent 95.6%), radial-gradient(circle closest-side, transparent 72%, rgb(255 255 255 / .07) 100%), radial-gradient(circle at 50% 112%, rgb(var(--drm-accent-rgb) / .12), transparent 58%), linear-gradient(155deg, rgb(255 255 255 / .12), rgb(255 255 255 / .02) 40%, rgb(255 255 255 / .01) 62%, rgb(255 255 255 / .06)), rgb(24 26 32 / calc(.38 * var(--lq-tint, 1))); --pie-shadow: 0 0 0 .5px rgb(0 0 0 / .3), 0 30px 60px -14px rgb(0 0 0 / .55), 0 10px 22px -6px rgb(0 0 0 / .28), inset 0 0 0 1px rgb(255 255 255 / .06), inset 2px 3px 5px -2px rgb(255 255 255 / .55), inset -2px -3px 5px -2px rgb(255 255 255 / .3), inset 0 0 36px rgb(255 255 255 / .06); --pie-blur: blur(calc(18px * var(--lq-blur, 1))) saturate(calc(1.8 * var(--lq-sat, 1))) brightness(calc(1.1 * var(--lq-bright, 1))); --pie-rim: rgb(255 255 255 / .22); --pie-divider: rgb(255 255 255 / calc(.3 * var(--lq-divider, 1))); --pie-hole-bg: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .3), transparent 58%), radial-gradient(circle at 50% 120%, rgb(var(--drm-accent-rgb) / .16), transparent 62%), linear-gradient(160deg, rgb(255 255 255 / .1), rgb(255 255 255 / .02)), rgb(30 32 38 / .3); --lq-hole-border: rgb(255 255 255 / .16); --lq-hole-shadow: 0 8px 20px -4px rgb(0 0 0 / .45), 0 1px 3px rgb(0 0 0 / .25), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3), inset 0 0 14px rgb(255 255 255 / .08); --lq-hole-hover-shadow: 0 0 0 1px rgb(var(--drm-accent-strong-rgb) / .55), 0 0 20px rgb(var(--drm-accent-strong-rgb) / .35), 0 8px 20px -4px rgb(0 0 0 / .4), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3); --lq-active-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .08) 52%, rgb(var(--drm-accent-strong-rgb) / .16) 78%, rgb(var(--drm-accent-strong-rgb) / .06) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .08) 52%, rgb(255 255 255 / .17) 78%, rgb(255 255 255 / .07) 94%); --lq-press-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .16) 52%, rgb(var(--drm-accent-strong-rgb) / .3) 78%, rgb(var(--drm-accent-strong-rgb) / .12) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .14) 52%, rgb(255 255 255 / .28) 78%, rgb(255 255 255 / .12) 94%); }
+[data-style="liquid"] { --lq-spec: calc(.85 * var(--lq-spec-hl, 1)); --lq-spec-mid: calc(.3 * var(--lq-spec-hl, 1)); --lq-spec-lo: calc(.05 * var(--lq-spec-hl, 1)); --lq-fog-top: .2; --lq-fog-bottom: .1; --lq-fog-wash: .04; --pie-bg: radial-gradient(circle closest-side, transparent 92.5%, rgb(255 255 255 / .1) 94%, transparent 95.6%), radial-gradient(circle closest-side, transparent 72%, rgb(255 255 255 / .07) 100%), radial-gradient(circle at 50% 112%, rgb(var(--drm-accent-rgb) / .12), transparent 58%), linear-gradient(155deg, rgb(255 255 255 / .12), rgb(255 255 255 / .02) 40%, rgb(255 255 255 / .01) 62%, rgb(255 255 255 / .06)), rgb(24 26 32 / calc(.38 * var(--lq-tint, 1))); --pie-shadow: 0 0 0 .5px rgb(0 0 0 / .3), 0 30px 60px -14px rgb(0 0 0 / .55), 0 10px 22px -6px rgb(0 0 0 / .28), inset 0 0 0 1px rgb(255 255 255 / .06), inset 2px 3px 5px -2px rgb(255 255 255 / .55), inset -2px -3px 5px -2px rgb(255 255 255 / .3), inset 0 0 36px rgb(255 255 255 / .06); --pie-blur: blur(calc(18px * var(--lq-blur, 1))) saturate(calc(1.8 * var(--lq-sat, 1))) brightness(calc(1.1 * var(--lq-bright, 1))); --pie-rim: rgb(255 255 255 / .22); --pie-divider: rgb(255 255 255 / calc(.3 * var(--lq-divider, 1))); --pie-hole-bg: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .3), transparent 58%), radial-gradient(circle at 50% 120%, rgb(var(--drm-accent-rgb) / .16), transparent 62%), linear-gradient(160deg, rgb(255 255 255 / .1), rgb(255 255 255 / .02)), rgb(30 32 38 / .3); --lq-hole-border: rgb(255 255 255 / .16); --lq-hole-shadow: 0 8px 20px -4px rgb(0 0 0 / .45), 0 1px 3px rgb(0 0 0 / .25), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3), inset 0 0 14px rgb(255 255 255 / .08); --lq-hole-hover-shadow: 0 0 0 1px rgb(var(--drm-accent-strong-rgb) / .55), 0 0 20px rgb(var(--drm-accent-strong-rgb) / .35), 0 8px 20px -4px rgb(0 0 0 / .4), inset 1.5px 2px 3px -1px rgb(255 255 255 / .6), inset -1.5px -2px 3px -1px rgb(255 255 255 / .3); --lq-active-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .08) 52%, rgb(var(--drm-accent-strong-rgb) / .16) 78%, rgb(var(--drm-accent-strong-rgb) / .06) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .08) 52%, rgb(255 255 255 / .17) 78%, rgb(255 255 255 / .07) 94%); --lq-press-bg: radial-gradient(circle closest-side, transparent 30%, rgb(var(--drm-accent-strong-rgb) / .16) 52%, rgb(var(--drm-accent-strong-rgb) / .3) 78%, rgb(var(--drm-accent-strong-rgb) / .12) 94%), radial-gradient(circle closest-side, transparent 30%, rgb(255 255 255 / .14) 52%, rgb(255 255 255 / .28) 78%, rgb(255 255 255 / .12) 94%); --drm-active-bg: var(--lq-active-bg); --drm-press-bg: var(--lq-press-bg); }
 /* Specular rim: a 1.5px ring cut out of a conic gradient with a mask. The
    highlight sits at the upper left (315deg) and, weaker, at the opposite side. */
 [data-drm-pie][data-style="liquid"]::before { inset: 0; border: 0; padding: 1.5px; background: conic-gradient(from 315deg, rgb(255 255 255 / var(--lq-spec)) 0deg, rgb(255 255 255 / var(--lq-spec-mid)) 28deg, rgb(255 255 255 / var(--lq-spec-lo)) 78deg, rgb(255 255 255 / var(--lq-spec-lo)) 112deg, rgb(255 255 255 / var(--lq-spec-mid)) 152deg, rgb(255 255 255 / calc(var(--lq-spec) * .7)) 180deg, rgb(255 255 255 / var(--lq-spec-mid)) 208deg, rgb(255 255 255 / var(--lq-spec-lo)) 258deg, rgb(255 255 255 / var(--lq-spec-lo)) 292deg, rgb(255 255 255 / var(--lq-spec-mid)) 332deg, rgb(255 255 255 / var(--lq-spec)) 360deg); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask-composite: xor; }
@@ -410,9 +413,11 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
    the disc already blurs what is behind it. */
 [data-drm-pie][data-style="liquid"] [data-drm-hole] { border: 1px solid var(--lq-hole-border); box-shadow: var(--lq-hole-shadow); }
 [data-drm-pie][data-style="liquid"] [data-drm-hole]:hover { border-color: rgb(var(--drm-accent-strong-rgb) / .5); box-shadow: var(--lq-hole-hover-shadow); }
-/* Hovered / focused sector: a brighter pane of glass with a touch of accent. */
-[data-style="liquid"] [data-drm-action][data-active]:not([data-disabled]), [data-style="liquid"] [data-drm-action]:focus-visible:not([data-disabled]) { background: var(--lq-active-bg); }
-[data-style="liquid"] [data-drm-action]:active:not([data-disabled]) { background: var(--lq-press-bg); }
+/* Hovered / focused sector: the wedge highlight moved to the shared sliding
+   glow overlay ([data-drm-glow], see below) — painting it per sector snapped
+   because background-image cannot interpolate none <-> gradient. The liquid
+   recipe feeds the glow through --drm-active-bg (vars block above); the press
+   flash stays per sector but cross-fades through ::before opacity. */
 [data-style="glass"] { --pie-bg: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-pie), transparent), transparent 64%), var(--dsw-alias-bg-overlay, radial-gradient(circle at 40% 25%, #292e34, #181b20 75%)); --pie-shadow: 0 0 0 1px rgb(var(--drm-accent-rgb) / .24), 0 0 30px rgb(var(--drm-accent-rgb) / .14), var(--drm-elev); --pie-blur: blur(10px) saturate(1.25); --pie-rim: var(--dsw-alias-border-l2, rgb(200 219 237 / .15)); --pie-divider: var(--dsw-alias-border-l3, rgb(209 224 236 / .14)); --pie-hole-bg: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-hole), transparent), transparent 72%), var(--dsw-alias-bg-layer-2, #2a3038); }
 [data-style="solid"] { --pie-bg: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--drm-accent-strong) 6%, transparent), transparent 70%), var(--dsw-alias-bg-layer-1, #1d222a); --pie-shadow: 0 0 0 1px var(--dsw-alias-border-l2, #3a4250), 0 18px 48px rgb(0 0 0 / .5); --pie-rim: var(--dsw-alias-border-l1, #2c3440); --pie-divider: var(--dsw-alias-border-l2, #3a4250); --pie-hole-bg: var(--dsw-alias-bg-layer-2, #232932); }
 [data-style="neon"] { --pie-bg: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--drm-accent-strong) 10%, transparent), transparent 68%), rgb(9 11 16 / .9); --pie-shadow: 0 0 0 1.5px var(--drm-accent-strong), 0 0 26px color-mix(in srgb, var(--drm-accent-strong) 40%, transparent), inset 0 0 24px color-mix(in srgb, var(--drm-accent-strong) 12%, transparent), var(--drm-elev); --pie-rim: color-mix(in srgb, var(--drm-accent-strong) 40%, transparent); --pie-divider: color-mix(in srgb, var(--drm-accent-strong) 30%, transparent); --pie-hole-bg: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--drm-accent-strong) 18%, transparent), transparent 74%), rgb(9 11 16 / .92); }
@@ -446,11 +451,31 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 [data-drm-hole] span { font: 10px/1 system-ui, sans-serif; color: var(--dsw-alias-label-tertiary, #8997a7); letter-spacing: .08em; }
 [data-drm-hole]:hover { border-color: var(--drm-accent-strong); box-shadow: 0 0 16px rgb(var(--drm-accent-strong-rgb) / .38), 0 2px 12px rgb(0 0 0 / .28); transform: translate(-50%, -50%) scale(1.05); }
 [data-drm-hole]:focus-visible { outline: 2px solid var(--drm-accent-strong); outline-offset: 3px; }
-[data-drm-action] { appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; z-index: 2; transition: background .16s, color .16s; }
-[data-drm-action][data-active]:not([data-disabled]), [data-drm-action]:focus-visible:not([data-disabled]) { background: radial-gradient(circle, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-active-1), transparent) 12%, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-active-2), transparent) 55%, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-active-3), transparent)); color: var(--dsw-alias-label-primary, #fff); outline: none; }
+[data-drm-action] { appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; z-index: 2; transition: color .16s; }
+[data-drm-action][data-active]:not([data-disabled]), [data-drm-action]:focus-visible:not([data-disabled]) { color: var(--dsw-alias-label-primary, #fff); outline: none; }
 [data-drm-action][data-active]:not([data-disabled]) [data-drm-icon] { color: var(--drm-accent-strong); filter: drop-shadow(0 0 8px rgb(var(--drm-accent-strong-rgb) / .5)); transform: scale(1.14); }
 [data-drm-action][data-disabled] { color: var(--dsw-alias-label-tertiary, #78818e); cursor: not-allowed; }
 [data-drm-action]:active:not([data-disabled]) [data-drm-icon], [data-drm-action]:active:not([data-disabled]) [data-drm-text] { transform: scale(.94); }
+/* Press flash: rides on ::before so opacity can cross-fade it (a background
+   swap none <-> gradient would snap). Clipped to the wedge by the button's
+   own clip-path; the default recipe defines no --drm-press-bg, so it stays
+   invisible there exactly like the old rules. */
+[data-drm-action]::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--drm-press-bg, none); opacity: 0; pointer-events: none; transition: opacity .14s ease; }
+[data-drm-action]:active:not([data-disabled])::before { opacity: 1; }
+/* Sliding selection glow: ONE ring-band pane — the same accent gradient the
+   hovered sector used to paint on itself — masked to a single sector-wide
+   wedge and rotated to the hovered sector's centre. --drm-glow-angle is a
+   registered <angle>, so it interpolates: moving between sectors GLIDES the
+   highlight around the ring instead of snapping one wedge off and the next
+   one on; JS unwraps the target to the nearest equivalent angle so last ->
+   first crosses 0deg the short way. Opacity alone covers hover-in/out. The
+   z-index ties with the sector buttons and it sits earlier in the DOM, so
+   icons and labels paint on top of the glow. The radial mask layer confines
+   the glow to the sector band (INNER_RATIO .18 -> OUTER_RATIO .47 of the
+   box = 36% -> 94% of the closest-side radius) exactly like the per-sector
+   clip-path polygons do, so it can never bleed over the rim or the hole. */
+[data-drm-glow] { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 2; opacity: 0; background: var(--drm-active-bg, radial-gradient(circle, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-active-1), transparent) 12%, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-active-2), transparent) 55%, color-mix(in srgb, var(--drm-accent-strong) var(--drm-tint-active-3), transparent))); mask: radial-gradient(circle closest-side, transparent 36%, #000 36% 94%, transparent 94%), conic-gradient(from calc(var(--drm-glow-angle, 0deg) - var(--drm-step, 45deg) / 2), #000 0deg var(--drm-step, 45deg), transparent var(--drm-step, 45deg)); mask-composite: intersect; -webkit-mask-composite: source-in; transition: --drm-glow-angle .22s cubic-bezier(.25, .9, .35, 1), opacity .16s ease; }
+[data-drm-glow][data-on] { opacity: 1; }
 [data-drm-label] { position: absolute; width: var(--drm-label-width, 30%); transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 5px; color: inherit; font: 500 clamp(10px, calc(var(--drm-size) * .046), 11px)/1.3 system-ui, sans-serif; text-align: center; text-shadow: var(--drm-text-shadow); user-select: none; pointer-events: none; animation: drm-label-in calc(var(--drm-dur) * .9) cubic-bezier(.34, 1.56, .64, 1) backwards; animation-delay: calc(var(--drm-dur) * .18 + var(--drm-index, 0) * 26ms); }
 [data-drm-icon] { display: block; flex: none; width: calc(var(--drm-size, 200px) * .083); height: calc(var(--drm-size, 200px) * .083); transition: transform .14s cubic-bezier(.3, 1.2, .6, 1), color .16s, filter .16s; }
 [data-drm-text] { width: 100%; max-width: 100%; white-space: pre-line; overflow-wrap: anywhere; }
@@ -501,6 +526,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 [data-drm-preview][data-motion="soft"] [data-drm-hole] { animation: drm-fade-soft min(var(--drm-dur), 500ms) ease-out backwards; }
 [data-drm-preview][data-motion="soft"] [data-drm-label] { animation: drm-fade-soft min(var(--drm-dur), 500ms) ease-out backwards; animation-delay: 0ms; }
 [data-drm-preview][data-motion="soft"] [data-drm-hole], [data-drm-preview][data-motion="soft"] [data-drm-icon] { transition-duration: .01ms; }
+[data-drm-preview][data-motion="soft"] [data-drm-glow] { transition: opacity .16s ease; }
 [data-drm-accent-field] { margin: 0 0 12px; }
 [data-drm-accent-field] > [data-drm-accent-caption] { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; }
 [data-drm-swatch-hex] { margin-left: auto; font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--drm-accent-strong); text-transform: uppercase; }
@@ -555,6 +581,9 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 [data-drm-layer][data-motion="soft"] [data-drm-label] { animation: drm-fade-soft min(var(--drm-dur), 500ms) ease-out backwards; animation-delay: 0ms; }
 [data-drm-layer][data-motion="soft"] [data-drm-toast], [data-drm-layer][data-motion="soft"] [data-drm-toast][data-kind="pending"] > [data-drm-icon] { animation: none; }
 [data-drm-layer][data-motion="soft"] [data-drm-hole], [data-drm-layer][data-motion="soft"] [data-drm-icon], [data-drm-layer][data-motion="soft"] [data-drm-swatch], [data-drm-layer][data-motion="soft"] [data-drm-panel-list] li, [data-drm-layer][data-motion="soft"] [data-drm-panel-list] button, [data-drm-layer][data-motion="soft"] [data-drm-panel-foot] button { transition-duration: .01ms; }
+/* Soft tier keeps the glow's fade but drops the glide: the wedge teleports
+   while invisible, honouring reduced-motion without bringing back the snap. */
+[data-drm-layer][data-motion="soft"] [data-drm-glow] { transition: opacity .16s ease; }
 [data-drm-layer][data-motion="soft"] [data-drm-pie][data-closing], [data-drm-layer][data-motion="soft"] [data-drm-frost][data-closing] { display: none; }
 `
     function ensureStyles() {
@@ -684,6 +713,8 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
       const { open, hover, setHover, actions, state, t, onClose, onExecute } = props
       const menuElement = useRef(null)
       const centerElement = useRef(null)
+      /* Cumulative (unwrapped) angle of the sliding selection glow. */
+      const glowAngle = useRef(0)
       const detailId = useId()
       /* The frosted pane paints from the very first frame, so the disc never
          shows an unblurred pass before the frost settles in. */
@@ -722,6 +753,20 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
       const description = hover === null ? t('keys')
         : hovered === undefined ? t('cancel')
           : props.describe(hovered, state)
+      /* Sliding-glow angle: express the hovered sector's centre as the
+         equivalent angle nearest the previous one so the registered
+         --drm-glow-angle always interpolates the SHORT way round the ring
+         (last -> first crosses 0deg instead of sweeping back through every
+         sector). Disabled sectors keep the glow off, matching the old
+         :not([data-disabled]) background rule. Mutating the ref during
+         render is safe: the unwrap is idempotent for one and the same
+         hover, so re-renders never drift. */
+      const glowLit = typeof hover === 'number' && isActionEnabled(actions[hover], state)
+      const glowStep = actions.length > 0 ? 360 / actions.length : 0
+      let glowTo = glowLit ? hover * glowStep : glowAngle.current
+      while (glowTo - glowAngle.current > 180) glowTo -= 360
+      while (glowAngle.current - glowTo > 180) glowTo += 360
+      glowAngle.current = glowTo
       return h(React.Fragment, null,
         open.closing ? null : h('div', {
           'data-drm-catcher': '',
@@ -784,6 +829,13 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
         h('span', null, 'Esc')),
         h('div', { 'data-drm-detail': '', id: detailId, 'data-visible': typeof hover === 'number' ? '' : undefined },
           h('span', null, description)),
+        /* Selection glow: one wedge of accent-tinted glass that glides to
+           the hovered sector (see the [data-drm-glow] CSS note). */
+        h('div', {
+          'data-drm-glow': '', 'aria-hidden': true,
+          'data-on': glowLit ? '' : undefined,
+          style: { '--drm-glow-angle': `${glowAngle.current}deg` },
+        }),
         sectors.map(({ id, clip, position, index }) => {
           const enabled = isActionEnabled(id, state)
           return h('button', {
@@ -868,12 +920,21 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
       const t = deps.t
       const [hover, setHover] = useState(null)
       const [replay, setReplay] = useState(0)
+      /* Cumulative (unwrapped) angle of the sliding selection glow. */
+      const glowAngle = useRef(0)
       /* Same tier resolution as the overlay root, so 'auto' previews what the
          ring would really play under the current system preference. */
       const systemReduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
       const tier = motion === 'auto' ? (systemReduce ? 'soft' : 'full') : motion
       const count = items.length
       const hovered = typeof hover === 'number' ? items[hover] : undefined
+      /* Same shortest-way unwrap as the production pie so the preview
+         glides exactly like the real ring does. */
+      const glowStep = count > 0 ? 360 / count : 0
+      let glowTo = typeof hover === 'number' ? hover * glowStep : glowAngle.current
+      while (glowTo - glowAngle.current > 180) glowTo -= 360
+      while (glowAngle.current - glowTo > 180) glowTo += 360
+      glowAngle.current = glowTo
       const bump = () => setReplay(n => n + 1)
       return h(React.Fragment, null,
         h('div', { 'data-drm-preview-bar': '' },
@@ -905,6 +966,12 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
               h(MenuIcon, { name: hovered === undefined ? 'close' : deps.itemIcon(hovered), size: 20 }),
               h('strong', null, t('choose')),
               h('span', null, 'Esc')),
+            /* Selection glow: mirrors the production ring (see CSS note). */
+            h('div', {
+              'data-drm-glow': '', 'aria-hidden': true,
+              'data-on': typeof hover === 'number' ? '' : undefined,
+              style: { '--drm-glow-angle': `${glowAngle.current}deg` },
+            }),
             items.map((id, index) => h('button', {
               type: 'button', tabIndex: -1, key: id,
               'data-drm-action': '', 'data-active': hover === index ? '' : undefined,
