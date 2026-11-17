@@ -1,9 +1,9 @@
 {
   "name": "@local/dsh-radial-menu",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
-  "description": "Astrolabe: a right-click radial menu for the DSH Web GUI, configured from the Astrolabe section of the settings panel (actions, order, ring size, disc style, motion, theme color).",
+  "description": "Astrolabe: a right-click radial menu for the DSH Web GUI, configured from the Astrolabe section of the settings panel (actions, order, ring size, liquid-glass tuning with live preview, motion, theme color).",
   "license": "MIT",
   "exports": {
     ".": "./index.js",

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Astrolabe",
-    "description": "Right-click opens a customizable ring menu: jump to the plugin market, settings, or a new session, plus session actions like fork, interrupt, copy, and open folder; configure actions, order, ring size, liquid-glass finish, motion, and theme color in the Astrolabe section of the settings panel, and it blooms open from the pointer with a ripple animation.",
+    "description": "Right-click opens a customizable ring menu: jump to the plugin market, settings, or a new session, plus session actions like fork, interrupt, copy, and open folder; configure actions, order, ring size, liquid-glass finish (with a live preview while tuning), motion, and theme color in the Astrolabe section of the settings panel, and it blooms open from the pointer with a ripple animation.",
     "detail": "docs/DETAIL.md"
   }
 }

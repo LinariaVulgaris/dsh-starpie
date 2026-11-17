@@ -211,6 +211,9 @@ window.__ModuleLoader__.load({
       'panel.size': '圆盘大小',
       'panel.duration': '弹出时长',
       'panel.liquid': '液态玻璃微调',
+      'panel.preview': '实时预览',
+      'panel.preview.hint': '滑钮即时生效 · 点击圆盘重播动画',
+      'panel.preview.replay': '重播动画',
       'panel.blur': '模糊强度', 'panel.saturation': '饱和度', 'panel.brightness': '亮度',
       'panel.tint': '底色浓度', 'panel.specular': '镜面高光', 'panel.divider': '分割线', 'panel.fog': '雾面光泽',
       'panel.motion': '动效强度',
@@ -271,6 +274,9 @@ window.__ModuleLoader__.load({
       'panel.size': 'Ring size',
       'panel.duration': 'Pop-in duration',
       'panel.liquid': 'Liquid glass tuning',
+      'panel.preview': 'Live preview',
+      'panel.preview.hint': 'Sliders apply instantly · Click the disc to replay',
+      'panel.preview.replay': 'Replay animation',
       'panel.blur': 'Blur', 'panel.saturation': 'Saturation', 'panel.brightness': 'Brightness',
       'panel.tint': 'Tint opacity', 'panel.specular': 'Specular rim', 'panel.divider': 'Dividers', 'panel.fog': 'Fog sheen',
       'panel.motion': 'Motion',
@@ -330,9 +336,9 @@ window.__ModuleLoader__.load({
       h('path', { d: ICON_PATHS[name] ?? ICON_PATHS.close, stroke: circular ? '#fff' : undefined, strokeWidth: circular ? 2 : undefined }))
     }
 
-    const STYLE_TAG = 'dsh-radial-menu/styles/v9'
+    const STYLE_TAG = 'dsh-radial-menu/styles/v11'
     /** Earlier sheets this bundle supersedes; removed before the new one loads. */
-    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7', 'dsh-radial-menu/styles/v8']
+    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7', 'dsh-radial-menu/styles/v8', 'dsh-radial-menu/styles/v9', 'dsh-radial-menu/styles/v10']
     const CSS = `
 [data-drm-layer], [data-drm-settings] { --drm-accent: #67dce7; --drm-accent-rgb: 103 220 231; --drm-accent-strong: #67dce7; --drm-accent-strong-rgb: 103 220 231; --drm-accent-solid: #67dce7; --drm-accent-solid-fg: #06333a; --drm-accent-solid-hover: #8fe9f1; --drm-accent-fg: #06333a; --drm-tint-pie: 8%; --drm-tint-hole: 14%; --drm-tint-active-1: 6%; --drm-tint-active-2: 15%; --drm-tint-active-3: 32%; --drm-elev: 0 16px 44px rgb(0 0 0 / .42); --drm-text-shadow: 0 1px 3px rgb(0 0 0 / .35); --drm-dur: 380ms; }
 [data-drm-layer] { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: var(--dsw-font-family, system-ui, sans-serif); }
@@ -355,7 +361,9 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
    re-rasterizes at scale 1 instead of staying on a cached enlarged raster. */
 [data-drm-pie] { position: fixed; width: var(--drm-size); height: var(--drm-size); transform: translate(-50%, -50%); pointer-events: auto; border-radius: 50%; color: var(--dsw-alias-label-primary, #dce4ed); z-index: 1; box-shadow: var(--pie-shadow); animation: drm-bloom var(--drm-dur) cubic-bezier(.34, 1.56, .64, 1) backwards; }
 /* Frosted pane as a SIBLING of the pie, in its own childless layer, and with
-   NO animation or transition of its own — not even opacity. Any animation on
+   no ENTRANCE animation or transition of its own — not even opacity (the
+   close-only fade at [data-drm-frost][data-closing] below is the single
+   exception, taken while the pane is already on its way out). Any animation on
    a backdrop-filter element promotes it to a composited layer whose backdrop
    snapshot Chromium can mis-place and stretch (it painted a displaced ellipse
    and left the disc unfilled), and any transformed ancestor defers the blur
@@ -414,6 +422,14 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 [data-drm-style-option]:focus-visible { outline: 2px solid var(--drm-accent-strong); outline-offset: 2px; }
 [data-drm-pie][data-closing] { animation: drm-close .15s ease-in forwards; pointer-events: none; }
 [data-drm-pie][data-closing] [data-drm-label], [data-drm-pie][data-closing] [data-drm-hole] { animation: none; }
+/* The pane dissolves in lockstep with the pie above it: identical .15s
+   ease-in curve, opacity ONLY — a transform here would re-trigger the
+   mis-placed backdrop snapshot the entrance experiments documented above.
+   Without this fade the glass disc holds at full strength while the ring
+   collapses, then pops out a beat late; if Chromium still drops the blur
+   mid-fade the pane is vanishing anyway, so the worst case is a transient
+   flat tint instead of an always-visible desync. */
+[data-drm-frost][data-closing] { animation: drm-frost-out .15s ease-in forwards; }
 [data-drm-pie]::before { content: ''; position: absolute; inset: 3%; border-radius: 50%; border: 1px solid var(--pie-rim, var(--dsw-alias-border-l2, rgb(200 219 237 / .15))); pointer-events: none; z-index: 3; }
 [data-drm-pie]::after { content: ''; position: absolute; inset: 3%; border-radius: 50%; background: repeating-conic-gradient(from calc(0deg - var(--drm-step) / 2), var(--pie-divider, var(--dsw-alias-border-l3, rgb(209 224 236 / .14))) 0deg .45deg, transparent .45deg var(--drm-step)); mask: radial-gradient(circle, transparent 0 calc(var(--drm-hole) + 1px), #000 calc(var(--drm-hole) + 2px)); pointer-events: none; z-index: 3; }
 [data-drm-hole] { appearance: none; box-sizing: border-box; position: absolute; left: 50%; top: 50%; width: calc(var(--drm-hole) * 2); height: calc(var(--drm-hole) * 2); margin: 0; padding: 8px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: inherit; color: var(--dsw-alias-label-secondary, #c3d1df); border-radius: 50%; background: var(--pie-hole-bg, var(--dsw-alias-bg-layer-2, #2a3038)); border: 1px solid rgb(var(--drm-accent-rgb) / .3); box-shadow: 0 2px 12px rgb(0 0 0 / .28), inset 0 0 0 1px rgb(255 255 255 / .04); z-index: 4; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; animation: drm-hole-in calc(var(--drm-dur) * .84) cubic-bezier(.34, 1.56, .64, 1) calc(var(--drm-dur) * .13) backwards; }
@@ -456,6 +472,26 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 [data-drm-panel-group] h3 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--dsw-alias-label-secondary, #a8b4c2); }
 [data-drm-panel-group] [data-drm-panel-field] { margin: 0; }
 [data-drm-panel-group] [data-drm-panel-field] span { flex: none; min-width: 104px; color: var(--dsw-alias-label-secondary, #a8b4c2); font-variant-numeric: tabular-nums; }
+/* ---- Live preview (settings panel) ---- */
+/* The preview renders the production liquid-glass structure at the real ring
+   size over a sample backdrop, so the sliders show their effect before saving.
+   Only positioning is overridden (fixed -> absolute, centred in this clipped
+   box); the recipe vars, entrance animations and hover states are the real
+   thing. The frost pane keeps zero animation and never remounts, for the same
+   Chromium backdrop-snapshot reasons documented on the production pane. */
+[data-drm-preview-bar] { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 12px; color: var(--dsw-alias-label-secondary, #a8b4c2); }
+[data-drm-preview-bar] > span:first-child { font-weight: 600; letter-spacing: .02em; }
+[data-drm-preview-hint] { color: var(--dsw-alias-label-tertiary, #8997a7); }
+[data-drm-preview-replay] { appearance: none; display: inline-flex; align-items: center; gap: 5px; margin: 0 0 0 auto; padding: 3px 10px; border: 1px solid var(--dsw-alias-border-l2, #3a4250); border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 12px; cursor: pointer; transition: border-color .15s, color .15s; }
+[data-drm-preview-replay]:hover { border-color: var(--drm-accent-strong); color: var(--drm-accent-strong); }
+[data-drm-preview-replay]:focus-visible { outline: 2px solid var(--drm-accent-strong); outline-offset: 2px; }
+[data-drm-preview-replay] [data-drm-icon] { width: 13px; height: 13px; }
+[data-drm-preview] { position: relative; margin: 0 0 12px; height: calc(var(--drm-size, 200px) + 36px); border: 1px solid var(--dsw-alias-border-l1, #2c3440); border-radius: 14px; overflow: hidden; isolation: isolate; cursor: pointer; user-select: none; font-family: var(--dsw-font-family, system-ui, sans-serif); background-image: radial-gradient(150px 110px at 16% 24%, rgb(244 114 182 / .55), transparent 72%), radial-gradient(170px 120px at 84% 20%, rgb(96 165 250 / .5), transparent 70%), radial-gradient(160px 130px at 74% 82%, rgb(250 204 21 / .45), transparent 72%), radial-gradient(140px 110px at 24% 80%, rgb(52 211 153 / .45), transparent 70%), radial-gradient(130px 100px at 50% 46%, rgb(var(--drm-accent-rgb) / .4), transparent 70%), repeating-linear-gradient(0deg, transparent 0 15px, rgb(125 135 150 / .18) 15px 17px); background-color: var(--dsw-alias-bg-layer-1, #1d222a); }
+[data-drm-preview] [data-drm-frost], [data-drm-preview] [data-drm-pie] { position: absolute; left: 50%; top: 50%; }
+[data-drm-preview][data-motion="soft"] [data-drm-pie] { animation: drm-bloom-soft min(var(--drm-dur), 500ms) ease-out; }
+[data-drm-preview][data-motion="soft"] [data-drm-hole] { animation: drm-fade-soft min(var(--drm-dur), 500ms) ease-out backwards; }
+[data-drm-preview][data-motion="soft"] [data-drm-label] { animation: drm-fade-soft min(var(--drm-dur), 500ms) ease-out backwards; animation-delay: 0ms; }
+[data-drm-preview][data-motion="soft"] [data-drm-hole], [data-drm-preview][data-motion="soft"] [data-drm-icon] { transition-duration: .01ms; }
 [data-drm-accent-field] { margin: 0 0 12px; }
 [data-drm-accent-field] > [data-drm-accent-caption] { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; }
 [data-drm-swatch-hex] { margin-left: auto; font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--drm-accent-strong); text-transform: uppercase; }
@@ -502,6 +538,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 @keyframes drm-bloom-soft { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes drm-fade-soft { from { opacity: 0; } to { opacity: 1; } }
 @keyframes drm-close { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(.25); } }
+@keyframes drm-frost-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes drm-hole-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.3); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes drm-label-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 [data-drm-layer][data-motion="soft"] [data-drm-pie] { animation: drm-bloom-soft min(var(--drm-dur), 500ms) ease-out; }
@@ -509,7 +546,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
 [data-drm-layer][data-motion="soft"] [data-drm-label] { animation: drm-fade-soft min(var(--drm-dur), 500ms) ease-out backwards; animation-delay: 0ms; }
 [data-drm-layer][data-motion="soft"] [data-drm-toast], [data-drm-layer][data-motion="soft"] [data-drm-toast][data-kind="pending"] > [data-drm-icon] { animation: none; }
 [data-drm-layer][data-motion="soft"] [data-drm-hole], [data-drm-layer][data-motion="soft"] [data-drm-icon], [data-drm-layer][data-motion="soft"] [data-drm-swatch], [data-drm-layer][data-motion="soft"] [data-drm-panel-list] li, [data-drm-layer][data-motion="soft"] [data-drm-panel-list] button, [data-drm-layer][data-motion="soft"] [data-drm-panel-foot] button { transition-duration: .01ms; }
-[data-drm-layer][data-motion="soft"] [data-drm-pie][data-closing] { display: none; }
+[data-drm-layer][data-motion="soft"] [data-drm-pie][data-closing], [data-drm-layer][data-motion="soft"] [data-drm-frost][data-closing] { display: none; }
 `
     function ensureStyles() {
       if (typeof document === 'undefined') return
@@ -688,6 +725,9 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
           'data-drm-frost': '', 'aria-hidden': true,
           key: `frost:${open.x}:${open.y}:${open.size}`,
           'data-style': DEFAULT_STYLE,
+          /* Close-only marker: arms the pane's opacity fade so the disc
+             dissolves in sync with the shrinking pie (see the CSS rule). */
+          'data-closing': open.closing ? '' : undefined,
           style: {
             left: open.x, top: open.y,
             '--drm-size': `${open.size}px`,
@@ -807,6 +847,66 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
         }))))
     }
 
+    /** Live preview of the disc: the real liquid-glass structure (frost pane +
+        pie + hole + sectors) rendered at the configured size over a sample
+        backdrop, so every control in this panel shows its effect before saving.
+        It reads the panel's draft state only — the Save button remains the sole
+        path into the live overlay. Clicking the box (or the replay button)
+        remounts the pie layer to restart the entrance animation; the frost pane
+        deliberately never remounts or animates, for the same Chromium
+        backdrop-snapshot reasons documented on the production pane. */
+    function LiquidPreview({ deps, size, duration, motion, liquid, items }) {
+      const t = deps.t
+      const [hover, setHover] = useState(null)
+      const [replay, setReplay] = useState(0)
+      /* Same tier resolution as the overlay root, so 'auto' previews what the
+         ring would really play under the current system preference. */
+      const systemReduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+      const tier = motion === 'auto' ? (systemReduce ? 'soft' : 'full') : motion
+      const count = items.length
+      const hovered = typeof hover === 'number' ? items[hover] : undefined
+      const bump = () => setReplay(n => n + 1)
+      return h(React.Fragment, null,
+        h('div', { 'data-drm-preview-bar': '' },
+          h('span', null, t('panel.preview')),
+          h('span', { 'data-drm-preview-hint': '' }, t('panel.preview.hint')),
+          h('button', {
+            type: 'button', 'data-drm-preview-replay': '',
+            title: t('panel.preview.replay'),
+            onClick: bump,
+          }, h(MenuIcon, { name: 'restart-dsh', size: 13 }), t('panel.preview.replay'))),
+        h('div', {
+          'data-drm-preview': '', 'data-motion': tier, 'aria-hidden': true,
+          title: t('panel.preview.hint'),
+          onClick: bump,
+          style: { '--drm-size': `${size}px`, ...liquidVars(liquid) },
+        },
+          h('div', { 'data-drm-frost': '', 'data-style': DEFAULT_STYLE }),
+          h('div', {
+            key: replay, 'data-drm-pie': '', 'data-style': DEFAULT_STYLE,
+            style: {
+              '--drm-hole': `${size * INNER_RATIO}px`,
+              '--drm-step': count > 0 ? `${360 / count}deg` : '360deg',
+              '--drm-label-width': count > 0 ? `${labelWidthPercent(count)}%` : '30%',
+              '--drm-dur': `${duration}ms`,
+            },
+          },
+            h('div', { 'data-drm-fog': '', 'aria-hidden': true }),
+            h('div', { 'data-drm-hole': '' },
+              h(MenuIcon, { name: hovered === undefined ? 'close' : deps.itemIcon(hovered), size: 20 }),
+              h('strong', null, t('choose')),
+              h('span', null, 'Esc')),
+            items.map((id, index) => h('button', {
+              type: 'button', tabIndex: -1, key: id,
+              'data-drm-action': '', 'data-active': hover === index ? '' : undefined,
+              style: { clipPath: sectorClip(index, count) },
+              onPointerEnter: () => setHover(index),
+              onPointerLeave: () => setHover(null),
+            }, h('span', { 'data-drm-label': '', style: { ...labelPosition(index, count), '--drm-index': String(index) } },
+              h(MenuIcon, { name: deps.itemIcon(id) }),
+              h('span', { 'data-drm-text': '' }, deps.itemLabel(id))))))))
+    }
+
     /** The settings-panel section that edits the ring: scope, size, duration,
         liquid-glass tuning, motion tier, accent, and which actions it shows. */
     function AstrolabeSettings(props) {
@@ -894,6 +994,7 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
           type: 'range', min: 120, max: 900, step: 20, value: duration,
           onChange: (event) => setDuration(Number(event.target.value)),
         })),
+      h(LiquidPreview, { deps, size, duration, motion, liquid, items: listed }),
       h('div', { 'data-drm-panel-group': '', role: 'group', 'aria-label': t('panel.liquid') },
         h('h3', null, t('panel.liquid')),
         LIQUID_PARAMS.map(param => h('div', { 'data-drm-panel-field': '', key: param.key },
