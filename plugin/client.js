@@ -336,9 +336,9 @@ window.__ModuleLoader__.load({
       h('path', { d: ICON_PATHS[name] ?? ICON_PATHS.close, stroke: circular ? '#fff' : undefined, strokeWidth: circular ? 2 : undefined }))
     }
 
-    const STYLE_TAG = 'dsh-radial-menu/styles/v11'
+    const STYLE_TAG = 'dsh-radial-menu/styles/v14'
     /** Earlier sheets this bundle supersedes; removed before the new one loads. */
-    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7', 'dsh-radial-menu/styles/v8', 'dsh-radial-menu/styles/v9', 'dsh-radial-menu/styles/v10']
+    const STALE_STYLE_TAGS = ['dsh-radial-menu/styles', 'dsh-radial-menu/styles/v2', 'dsh-radial-menu/styles/v3', 'dsh-radial-menu/styles/v4', 'dsh-radial-menu/styles/v5', 'dsh-radial-menu/styles/v6', 'dsh-radial-menu/styles/v7', 'dsh-radial-menu/styles/v8', 'dsh-radial-menu/styles/v9', 'dsh-radial-menu/styles/v10', 'dsh-radial-menu/styles/v11', 'dsh-radial-menu/styles/v12', 'dsh-radial-menu/styles/v13']
     const CSS = `
 [data-drm-layer], [data-drm-settings] { --drm-accent: #67dce7; --drm-accent-rgb: 103 220 231; --drm-accent-strong: #67dce7; --drm-accent-strong-rgb: 103 220 231; --drm-accent-solid: #67dce7; --drm-accent-solid-fg: #06333a; --drm-accent-solid-hover: #8fe9f1; --drm-accent-fg: #06333a; --drm-tint-pie: 8%; --drm-tint-hole: 14%; --drm-tint-active-1: 6%; --drm-tint-active-2: 15%; --drm-tint-active-3: 32%; --drm-elev: 0 16px 44px rgb(0 0 0 / .42); --drm-text-shadow: 0 1px 3px rgb(0 0 0 / .35); --drm-dur: 380ms; }
 [data-drm-layer] { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: var(--dsw-font-family, system-ui, sans-serif); }
@@ -376,12 +376,21 @@ body:not([data-ds-dark-theme]) [data-style="liquid"] { --lq-spec: calc(.95 * var
    clip-path (applied after the filter) to cut that bleed; the disc's outer
    depth shadow lives on the pie above, which has no backdrop-filter and thus
    paints a clean shadow ring. */
+/* The white halo reported around the rim turned out to be the fog veil's
+   edge crescents, not a glass clipping seam — fixed at [data-drm-fog] with
+   an edge-fade mask. The v12 feathered mask and the v13 inward clip on this
+   pane were both reverted: neither touched the halo, and the clip shrank
+   the glass 1.5px under the rim for no gain. */
 [data-drm-frost] { position: fixed; width: var(--drm-size); height: var(--drm-size); transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: 0; clip-path: circle(50% at 50% 50%); backdrop-filter: var(--pie-blur, none); background: var(--pie-bg); }
 /* Diffused veil over the disc. It carries no backdrop-filter of its own: a
    second nested blur forced Chromium to re-sample the whole disc surface. It
    is pure gradient: a broad specular sheen from the upper left and a faint
-   bounce light from the lower right, strengths set by --lq-fog-* per theme. */
-[data-drm-fog] { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 1; background: radial-gradient(120% 72% at 28% 0%, rgb(255 255 255 / calc(var(--lq-fog-top, .2) * var(--lq-fog, 1))), transparent 56%), radial-gradient(90% 60% at 82% 108%, rgb(255 255 255 / calc(var(--lq-fog-bottom, .1) * var(--lq-fog, 1))), transparent 62%), linear-gradient(180deg, rgb(255 255 255 / calc(var(--lq-fog-wash, .04) * var(--lq-fog, 1))), transparent 34%); }
+   bounce light from the lower right, strengths set by --lq-fog-* per theme.
+   Both sheen centres sit outside the circle, so each gradient peaks right
+   against the glass edge; that bright crescent read as a white halo hugging
+   the rim. The feathered mask fades the veil out over the outer band so the
+   edge stays clean while the interior sheen is untouched. */
+[data-drm-fog] { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 1; background: radial-gradient(120% 72% at 28% 0%, rgb(255 255 255 / calc(var(--lq-fog-top, .2) * var(--lq-fog, 1))), transparent 56%), radial-gradient(90% 60% at 82% 108%, rgb(255 255 255 / calc(var(--lq-fog-bottom, .1) * var(--lq-fog, 1))), transparent 62%), linear-gradient(180deg, rgb(255 255 255 / calc(var(--lq-fog-wash, .04) * var(--lq-fog, 1))), transparent 34%); mask: radial-gradient(circle closest-side at 50% 50%, #000 84%, transparent 96%); }
 /* ---- disc styles: each one only swaps the fill / rim / divider / hole palette ---- */
 /* Liquid glass (iOS-style). The surface is a clear, lightly tinted pane over a
    strong blur with boosted saturation and brightness, so what is behind it
