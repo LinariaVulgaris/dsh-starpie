@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "StarPie",
+    "description": "Right-clicking in a conversation opens a customizable liquid-glass ring menu at the pointer, with sectors for the plugin market, a new session, opening the workspace folder, copying its path, restarting DSH, and any settings section you check. Choose the actions and their order, the trigger area, ring size, pop-in duration, seven liquid-glass tuning sliders with a live preview, motion strength, and theme color in the StarPie section of the settings panel.",
+    "detail": "docs/DETAIL.md"
+  }
+}

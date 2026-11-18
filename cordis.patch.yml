@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-starpie
+      name: '@local/dsh-starpie'

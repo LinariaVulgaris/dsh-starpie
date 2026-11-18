@@ -1,10 +1,29 @@
 {
-  "name": "@local/dsh-radial-menu",
-  "version": "0.6.5",
+  "name": "@local/dsh-starpie",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Astrolabe: a right-click radial menu for the DSH Web GUI, configured from the Astrolabe section of the settings panel (actions, order, ring size, liquid-glass tuning with live preview, motion, theme color).",
+  "description": "StarPie: a right-click radial menu for the DSH Web GUI, configured from the StarPie section of the settings panel (actions, order, ring size, liquid-glass tuning with live preview, motion, theme color).",
   "license": "MIT",
+  "author": "LinariaVulgaris",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "dsh-bundle",
+    "cordis",
+    "radial-menu",
+    "context-menu",
+    "starpie"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LinariaVulgaris/dsh-starpie.git"
+  },
+  "homepage": "https://github.com/LinariaVulgaris/dsh-starpie#readme",
+  "bugs": {
+    "url": "https://github.com/LinariaVulgaris/dsh-starpie/issues"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
